@@ -19,7 +19,7 @@ def ollama_is_running(base_url: str) -> bool:
 
 
 base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-model = os.getenv("OLLAMA_MODEL", "llama3.2")
+model = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
 
 if not ollama_is_running(base_url):
 	print(f"Could not reach Ollama at {base_url}.")
