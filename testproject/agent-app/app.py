@@ -4,7 +4,9 @@ from urllib.error import URLError
 from urllib.request import urlopen
 
 from dotenv import load_dotenv
+from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_ollama import ChatOllama
+from langgraph.prebuilt import create_react_agent
 from rich.console import Console
 from rich.markdown import Markdown
 
@@ -34,7 +36,12 @@ llm = ChatOllama(
 	base_url=base_url,
 )
 
-response = llm.invoke("Explain what an AI agent is in simple terms")
+search_tool = TavilySearchResults()
+tools = [search_tool]
+
+agent = create_react_agent(llm, tools)
+
+response = agent.invoke({"messages": [{"role": "user", "content": "What are the latest developments in AI agents? Search the web for recent news."}]})
 
 console = Console()
-console.print(Markdown(response.content))
+console.print(Markdown(response["messages"][-1].content))
