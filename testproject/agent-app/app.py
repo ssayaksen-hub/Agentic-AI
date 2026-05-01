@@ -5,6 +5,8 @@ from urllib.request import urlopen
 
 from dotenv import load_dotenv
 from langchain_ollama import ChatOllama
+from rich.console import Console
+from rich.markdown import Markdown
 
 load_dotenv()
 
@@ -33,4 +35,6 @@ llm = ChatOllama(
 )
 
 response = llm.invoke("Explain what an AI agent is in simple terms")
-print(response.content)
+
+console = Console()
+console.print(Markdown(response.content))
