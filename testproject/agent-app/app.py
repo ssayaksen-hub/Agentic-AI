@@ -41,7 +41,7 @@ tools = [search_tool]
 
 agent = create_react_agent(llm, tools)
 
-response = agent.invoke({"messages": [{"role": "user", "content": "What are the latest developments in AI agents? Search the web for recent news."}]})
+response = agent.invoke({"messages": [{"role": "user", "content": "What are the latest trends in AI agents?"}]})
 
 console = Console()
 console.print(Markdown(response["messages"][-1].content))
