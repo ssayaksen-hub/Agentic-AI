@@ -46,7 +46,6 @@ agent = create_agent(
 	tools=tools,
 	checkpointer=checkpointer,
 	system_prompt="Always give a concise and structured answer.",
-	debug=True,
 )
 thread_config = {"configurable": {"thread_id": "default"}}
 
@@ -77,6 +76,14 @@ while True:
 		{"messages": [{"role": "user", "content": query}]},
 		config=thread_config,
 	)
+
+	# Summarise tool usage from the response messages.
+	for msg in response["messages"]:
+		tool_calls = getattr(msg, "tool_calls", None)
+		if tool_calls:
+			for tc in tool_calls:
+				console.print(f"[dim]> Search: {tc['args'].get('query', '')}[/dim]")
+
 	answer = render_content(response["messages"][-1].content)
 	console.print("\nAnswer:")
 	console.print(Markdown(answer))
