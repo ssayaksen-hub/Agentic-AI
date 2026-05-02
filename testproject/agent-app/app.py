@@ -4,9 +4,10 @@ from urllib.error import URLError
 from urllib.request import urlopen
 
 from dotenv import load_dotenv
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain.agents import create_agent
 from langchain_ollama import ChatOllama
-from langgraph.prebuilt import create_react_agent
+from langchain_tavily import TavilySearch
+from langgraph.checkpoint.memory import MemorySaver
 from rich.console import Console
 from rich.markdown import Markdown
 
@@ -36,12 +37,45 @@ llm = ChatOllama(
 	base_url=base_url,
 )
 
-search_tool = TavilySearchResults()
+search_tool = TavilySearch(max_results=5)
 tools = [search_tool]
 
-agent = create_react_agent(llm, tools)
+checkpointer = MemorySaver()
+agent = create_agent(
+	model=llm,
+	tools=tools,
+	checkpointer=checkpointer,
+	system_prompt="Always give a concise and structured answer.",
+)
+thread_config = {"configurable": {"thread_id": "default"}}
 
-response = agent.invoke({"messages": [{"role": "user", "content": "What are the latest trends in AI agents?"}]})
+
+# Handle both plain-string and block-list message contents.
+def render_content(content: object) -> str:
+	if isinstance(content, str):
+		return content
+	if isinstance(content, list):
+		parts = []
+		for item in content:
+			if isinstance(item, dict) and "text" in item:
+				parts.append(str(item["text"]))
+			else:
+				parts.append(str(item))
+		return "\n".join(parts)
+	return str(content)
+
 
 console = Console()
-console.print(Markdown(response["messages"][-1].content))
+
+while True:
+	query = input("\nAsk something: ")
+	if query.lower() == "exit":
+		break
+
+	response = agent.invoke(
+		{"messages": [{"role": "user", "content": query}]},
+		config=thread_config,
+	)
+	answer = render_content(response["messages"][-1].content)
+	console.print("\nAnswer:")
+	console.print(Markdown(answer))
