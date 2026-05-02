@@ -3,8 +3,11 @@ import sys
 from urllib.error import URLError
 from urllib.request import urlopen
 
+import logging
+
 from dotenv import load_dotenv
 from langchain.agents import create_agent
+from langchain_core.globals import set_debug, set_verbose
 from langchain_ollama import ChatOllama
 from langchain_tavily import TavilySearch
 from langgraph.checkpoint.memory import MemorySaver
@@ -12,6 +15,11 @@ from rich.console import Console
 from rich.markdown import Markdown
 
 load_dotenv()
+
+set_verbose(False)
+set_debug(False)
+logging.getLogger("langchain").setLevel(logging.ERROR)
+logging.getLogger("langgraph").setLevel(logging.ERROR)
 
 
 def ollama_is_running(base_url: str) -> bool:
