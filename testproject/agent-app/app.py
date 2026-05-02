@@ -46,6 +46,7 @@ agent = create_agent(
 	tools=tools,
 	checkpointer=checkpointer,
 	system_prompt="Always give a concise and structured answer.",
+	debug=True,
 )
 thread_config = {"configurable": {"thread_id": "default"}}
 
