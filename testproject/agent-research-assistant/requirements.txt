@@ -11,3 +11,5 @@ rich
 chromadb
 pypdf
 tiktoken
+fastapi
+uvicorn

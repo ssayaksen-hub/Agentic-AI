@@ -1,4 +1,4 @@
-from langchain.agents import create_agent
+from langchain.agents import create_agent as lc_create_agent
 from langgraph.checkpoint.memory import MemorySaver
 
 from app.config import llm
@@ -10,11 +10,15 @@ tools = get_tools()
 
 checkpointer = MemorySaver()
 
-agent = create_agent(
-    model=llm,
-    tools=tools,
-    checkpointer=checkpointer,
-    system_prompt=SYSTEM_PROMPT,
-)
+def create_agent():
+    return lc_create_agent(
+        model=llm,
+        tools=tools,
+        checkpointer=checkpointer,
+        system_prompt=SYSTEM_PROMPT,
+    )
+
+
+agent = create_agent()
 
 thread_config = {"configurable": {"thread_id": "default"}}
