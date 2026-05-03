@@ -1,7 +1,12 @@
 langchain
 langchain-core
+langchain-community
 langchain-ollama
 langchain-tavily
+langchain-text-splitters
 langgraph
 python-dotenv
 rich
+chromadb
+pypdf
+tiktoken
