@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from .agent import create_agent, thread_config
 from .prompts import SYSTEM_PROMPT
+from .tools import run_document_search
 
 app = FastAPI()
 
@@ -17,6 +18,15 @@ app.add_middleware(
 )
 
 agent = create_agent()
+
+DOCUMENT_HINT_KEYWORDS = (
+    "pdf",
+    "document",
+    "doc",
+    "file",
+    "notes",
+    "summarize my",
+)
 
 
 class Query(BaseModel):
@@ -47,7 +57,21 @@ def _extract_answer(response: object) -> str:
 
 @app.post("/chat")
 def chat(query: Query):
-    full_prompt = f"{SYSTEM_PROMPT}\n\nQuestion: {query.question}"
+    query_for_agent = query.question
+    lower_question = query.question.lower()
+    if any(keyword in lower_question for keyword in DOCUMENT_HINT_KEYWORDS):
+        doc_context = run_document_search(query.question)
+        if not doc_context.startswith("No indexed document") and not doc_context.startswith(
+            "No relevant passages"
+        ):
+            query_for_agent = (
+                f"{query.question}\n\n"
+                "Relevant context from indexed PDF documents:\n"
+                f"{doc_context}\n\n"
+                "Answer using the provided document context first."
+            )
+
+    full_prompt = f"{SYSTEM_PROMPT}\n\nQuestion: {query_for_agent}"
     response = agent.invoke(
         {"messages": [{"role": "user", "content": full_prompt}]},
         config=thread_config,
