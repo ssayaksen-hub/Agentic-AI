@@ -2,14 +2,19 @@
 
 import { useState } from "react";
 
+type Message = {
+  role: "user" | "ai";
+  content: string;
+};
+
 export default function Home() {
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
 
   const sendMessage = async () => {
     if (!input) return;
 
-    const userMessage = { role: "user", content: input };
+    const userMessage: Message = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
 
     const res = await fetch("http://127.0.0.1:8000/chat", {
@@ -22,7 +27,7 @@ export default function Home() {
 
     const data = await res.json();
 
-    const aiMessage = { role: "ai", content: data.answer };
+    const aiMessage: Message = { role: "ai", content: data.answer };
     setMessages((prev) => [...prev, aiMessage]);
 
     setInput("");
