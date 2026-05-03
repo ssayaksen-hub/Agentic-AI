@@ -1,0 +1,34 @@
+import os
+import sys
+from urllib.error import URLError
+from urllib.request import urlopen
+
+from dotenv import load_dotenv
+from langchain_ollama import ChatOllama
+
+load_dotenv()
+
+
+def ollama_is_running(base_url: str) -> bool:
+    """Return True if the Ollama server is reachable."""
+    health_url = f"{base_url.rstrip('/')}/api/tags"
+    try:
+        with urlopen(health_url, timeout=3):
+            return True
+    except URLError:
+        return False
+
+
+OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
+
+if not ollama_is_running(OLLAMA_BASE_URL):
+    print(f"Could not reach Ollama at {OLLAMA_BASE_URL}.")
+    print("Start Ollama and pull your model, then try again.")
+    print(f"Example: ollama pull {OLLAMA_MODEL}")
+    sys.exit(1)
+
+llm = ChatOllama(
+    model=OLLAMA_MODEL,
+    base_url=OLLAMA_BASE_URL,
+)
