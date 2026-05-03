@@ -5,6 +5,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 
 from .agent import agent, thread_config
+from .tools import run_document_search
 
 set_verbose(False)
 set_debug(False)
@@ -12,6 +13,15 @@ logging.getLogger("langchain").setLevel(logging.ERROR)
 logging.getLogger("langgraph").setLevel(logging.ERROR)
 
 console = Console()
+
+DOCUMENT_HINT_KEYWORDS = (
+    "pdf",
+    "document",
+    "doc",
+    "file",
+    "notes",
+    "summarize my",
+)
 
 
 def render_content(content: object) -> str:
@@ -35,8 +45,22 @@ def main() -> None:
         if query.lower() == "exit":
             break
 
+        query_for_agent = query
+        if any(keyword in query.lower() for keyword in DOCUMENT_HINT_KEYWORDS):
+            doc_context = run_document_search(query)
+            if not doc_context.startswith("No indexed document") and not doc_context.startswith(
+                "No relevant passages"
+            ):
+                # Provide retrieved context directly so the model does not ignore the tool.
+                query_for_agent = (
+                    f"{query}\n\n"
+                    "Relevant context from indexed PDF documents:\n"
+                    f"{doc_context}\n\n"
+                    "Answer using the provided document context first."
+                )
+
         response = agent.invoke(
-            {"messages": [{"role": "user", "content": query}]},
+            {"messages": [{"role": "user", "content": query_for_agent}]},
             config=thread_config,
         )
 

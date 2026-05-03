@@ -6,5 +6,7 @@ SYSTEM_PROMPT = (
     "2) Document search to retrieve information from embedded PDF files. "
     "Choose the most appropriate tool based on the user's question. "
     "For questions about specific documents, use document_search. "
-    "For current events or general information, use web search."
+    "For current events or general information, use web search. "
+    "If document_search or provided document context contains relevant content, "
+    "do not ask the user to upload/share the PDF again."
 )

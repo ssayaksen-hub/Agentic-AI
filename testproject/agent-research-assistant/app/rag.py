@@ -2,10 +2,38 @@ from pathlib import Path
 
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFLoader
+from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
+from pypdf import PdfReader
 
 from app.config import OLLAMA_BASE_URL, OLLAMA_EMBED_MODEL, VECTOR_COLLECTION_NAME
+
+
+def _extract_documents_with_fallback(file_path: str) -> list[Document]:
+    """Load PDF text with PyPDFLoader, then fallback to pypdf if needed."""
+    loader = PyPDFLoader(file_path)
+    documents = loader.load()
+
+    has_text = any((doc.page_content or "").strip() for doc in documents)
+    if has_text:
+        return documents
+
+    # Some PDFs are readable by pypdf but return empty content via loader defaults.
+    reader = PdfReader(file_path)
+    fallback_docs: list[Document] = []
+    for page_idx, page in enumerate(reader.pages):
+        text = (page.extract_text() or "").strip()
+        if not text:
+            continue
+        fallback_docs.append(
+            Document(
+                page_content=text,
+                metadata={"source": file_path, "page": page_idx},
+            )
+        )
+
+    return fallback_docs
 
 
 def create_vectorstore(
@@ -27,9 +55,8 @@ def create_vectorstore(
     if not pdf_path.exists():
         raise FileNotFoundError(f"PDF not found: {file_path}")
 
-    # Load PDF
-    loader = PyPDFLoader(file_path)
-    documents = loader.load()
+    # Load PDF with fallback extraction for loader-incompatible files.
+    documents = _extract_documents_with_fallback(file_path)
 
     # Split into chunks
     text_splitter = RecursiveCharacterTextSplitter(
