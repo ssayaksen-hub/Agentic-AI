@@ -4,7 +4,7 @@ from langchain_core.globals import set_debug, set_verbose
 from rich.console import Console
 from rich.markdown import Markdown
 
-from app.agent import agent, thread_config
+from .agent import agent, thread_config
 
 set_verbose(False)
 set_debug(False)

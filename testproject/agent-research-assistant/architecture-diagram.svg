@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1100" viewBox="0 0 1600 1100">
+  <defs>
+    <style>
+      .title { font: 700 30px Arial, sans-serif; fill: #1f2937; }
+      .subtitle { font: 500 16px Arial, sans-serif; fill: #4b5563; }
+      .box { fill: #f9fafb; stroke: #374151; stroke-width: 2; rx: 10; }
+      .group { fill: #eef2ff; stroke: #4338ca; stroke-width: 2; rx: 14; }
+      .label { font: 600 16px Arial, sans-serif; fill: #111827; }
+      .small { font: 500 14px Arial, sans-serif; fill: #111827; }
+      .group-title { font: 700 18px Arial, sans-serif; fill: #312e81; }
+      .arrow { stroke: #111827; stroke-width: 2.2; fill: none; marker-end: url(#arrowhead); }
+      .arrow-soft { stroke: #6b7280; stroke-width: 2; fill: none; marker-end: url(#arrowheadSoft); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#111827" />
+    </marker>
+    <marker id="arrowheadSoft" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280" />
+    </marker>
+  </defs>
+
+  <text x="40" y="50" class="title">Agent Research Assistant - Runtime Architecture</text>
+  <text x="40" y="80" class="subtitle">How LLM, tools, prompt, and memory work together per user query</text>
+
+  <!-- Top flow -->
+  <rect x="60" y="120" width="220" height="70" class="box" />
+  <text x="90" y="163" class="label">User in Terminal</text>
+
+  <rect x="340" y="120" width="200" height="70" class="box" />
+  <text x="410" y="163" class="label">run.py</text>
+
+  <rect x="600" y="120" width="250" height="70" class="box" />
+  <text x="645" y="163" class="label">app.main.main()</text>
+
+  <rect x="930" y="120" width="260" height="70" class="box" />
+  <text x="975" y="163" class="label">agent.invoke(...)</text>
+
+  <line x1="280" y1="155" x2="340" y2="155" class="arrow" />
+  <line x1="540" y1="155" x2="600" y2="155" class="arrow" />
+  <line x1="850" y1="155" x2="930" y2="155" class="arrow" />
+
+  <!-- Build agent group -->
+  <rect x="60" y="250" width="760" height="320" class="group" />
+  <text x="85" y="285" class="group-title">Agent Built at Import Time (app/agent.py)</text>
+
+  <rect x="100" y="320" width="240" height="80" class="box" />
+  <text x="130" y="355" class="label">create_agent(...)</text>
+  <text x="120" y="378" class="small">Composes model, tools, prompt, memory</text>
+
+  <rect x="390" y="320" width="180" height="80" class="box" />
+  <text x="420" y="355" class="label">MemorySaver</text>
+  <text x="425" y="378" class="small">checkpointer</text>
+
+  <rect x="610" y="320" width="170" height="80" class="box" />
+  <text x="637" y="355" class="label">thread_config</text>
+  <text x="640" y="378" class="small">thread_id=default</text>
+
+  <line x1="340" y1="360" x2="390" y2="360" class="arrow-soft" />
+  <line x1="570" y1="360" x2="610" y2="360" class="arrow-soft" />
+
+  <rect x="100" y="450" width="200" height="80" class="box" />
+  <text x="170" y="485" class="label">llm</text>
+  <text x="130" y="508" class="small">from app/config.py</text>
+
+  <rect x="330" y="450" width="200" height="80" class="box" />
+  <text x="400" y="485" class="label">tools</text>
+  <text x="360" y="508" class="small">from app/tools.py</text>
+
+  <rect x="560" y="450" width="220" height="80" class="box" />
+  <text x="620" y="485" class="label">SYSTEM_PROMPT</text>
+  <text x="605" y="508" class="small">from app/prompts.py</text>
+
+  <line x1="200" y1="450" x2="220" y2="400" class="arrow-soft" />
+  <line x1="430" y1="450" x2="300" y2="400" class="arrow-soft" />
+  <line x1="670" y1="450" x2="320" y2="400" class="arrow-soft" />
+
+  <!-- Config group -->
+  <rect x="860" y="250" width="700" height="180" class="group" />
+  <text x="885" y="285" class="group-title">Config Pipeline (app/config.py)</text>
+
+  <rect x="900" y="320" width="140" height="70" class="box" />
+  <text x="930" y="360" class="small">load_dotenv()</text>
+
+  <rect x="1070" y="320" width="180" height="70" class="box" />
+  <text x="1090" y="360" class="small">Read env vars</text>
+
+  <rect x="1280" y="320" width="120" height="70" class="box" />
+  <text x="1290" y="360" class="small">Health check</text>
+
+  <rect x="1420" y="320" width="120" height="70" class="box" />
+  <text x="1435" y="360" class="small">ChatOllama</text>
+
+  <line x1="1040" y1="355" x2="1070" y2="355" class="arrow" />
+  <line x1="1250" y1="355" x2="1280" y2="355" class="arrow" />
+  <line x1="1400" y1="355" x2="1420" y2="355" class="arrow" />
+
+  <!-- Tool / prompt boxes -->
+  <rect x="860" y="470" width="330" height="100" class="group" />
+  <text x="885" y="500" class="group-title">Tools (app/tools.py)</text>
+  <rect x="890" y="515" width="270" height="40" class="box" />
+  <text x="930" y="541" class="small">TavilySearch(max_results=5)</text>
+
+  <rect x="1230" y="470" width="330" height="100" class="group" />
+  <text x="1255" y="500" class="group-title">Prompt (app/prompts.py)</text>
+  <rect x="1260" y="515" width="270" height="40" class="box" />
+  <text x="1300" y="541" class="small">SYSTEM_PROMPT instructions</text>
+
+  <!-- Runtime decision -->
+  <rect x="940" y="640" width="260" height="70" class="box" />
+  <text x="985" y="682" class="label">Need web lookup?</text>
+
+  <rect x="720" y="760" width="300" height="70" class="box" />
+  <text x="770" y="802" class="label">No: Direct LLM answer</text>
+
+  <rect x="1070" y="760" width="360" height="70" class="box" />
+  <text x="1120" y="792" class="small">Yes: Tool call -> TavilySearch -></text>
+  <text x="1150" y="812" class="small">tool results -> final answer</text>
+
+  <line x1="1060" y1="190" x2="1060" y2="640" class="arrow" />
+  <line x1="980" y1="710" x2="870" y2="760" class="arrow" />
+  <line x1="1160" y1="710" x2="1240" y2="760" class="arrow" />
+
+  <rect x="840" y="900" width="420" height="70" class="box" />
+  <text x="900" y="932" class="small">main.py prints tool trace + markdown answer</text>
+  <text x="980" y="954" class="small">Loop continues</text>
+
+  <line x1="870" y1="830" x2="980" y2="900" class="arrow" />
+  <line x1="1240" y1="830" x2="1130" y2="900" class="arrow" />
+
+  <!-- Connect groups to agent invoke -->
+  <line x1="780" y1="360" x2="930" y2="190" class="arrow-soft" />
+  <line x1="1540" y1="355" x2="1190" y2="190" class="arrow-soft" />
+  <line x1="1160" y1="535" x2="1120" y2="640" class="arrow-soft" />
+  <line x1="1395" y1="535" x2="1150" y2="640" class="arrow-soft" />
+
+  <text x="40" y="1060" class="subtitle">Generated from your current project wiring in run.py, app/main.py, app/agent.py, app/config.py, app/tools.py, and app/prompts.py</text>
+</svg>
