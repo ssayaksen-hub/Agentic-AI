@@ -1,9 +1,9 @@
 from langchain.agents import create_agent
 from langgraph.checkpoint.memory import MemorySaver
 
-from app.config import llm
-from app.prompts import SYSTEM_PROMPT
-from app.tools import tools
+from .config import llm
+from .prompts import SYSTEM_PROMPT
+from .tools import tools
 
 checkpointer = MemorySaver()
 
