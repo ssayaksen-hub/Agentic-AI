@@ -3,7 +3,10 @@ from langgraph.checkpoint.memory import MemorySaver
 
 from app.config import llm
 from app.prompts import SYSTEM_PROMPT
-from app.tools import tools
+from app.tools import get_tools
+
+# Initialize tools (web search + RAG)
+tools = get_tools()
 
 checkpointer = MemorySaver()
 

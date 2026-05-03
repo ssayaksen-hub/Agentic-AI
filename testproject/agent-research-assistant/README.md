@@ -11,14 +11,15 @@ agent-research-assistant/
 │   ├── __init__.py
 │   ├── main.py        # Entry point and REPL loop
 │   ├── agent.py       # Agent creation and thread config
-│   ├── tools.py       # Tools (Tavily search)
+│   ├── tools.py       # Tools: web search + document search (RAG)
 │   ├── config.py      # Env vars, Ollama health check, LLM setup
-│   ├── prompts.py     # System prompt
+│   ├── prompts.py     # System prompt with tool descriptions
 │   └── rag.py         # RAG: PDF loading, embedding, vector store
 │
+├── data/              # Your PDF files go here
 ├── .env               # Environment variables (not committed)
 ├── requirements.txt
-├── example_rag.py     # Example usage of RAG module
+├── SETUP_RAG.py       # One-time script to embed PDFs
 ├── README.md
 └── .gitignore
 ```
@@ -50,25 +51,43 @@ python run.py
 
 Type your question and press Enter. Type `exit` to quit.
 
-### Use RAG with PDFs
+The agent automatically chooses between:
+- **Web Search** — For current/online information
+- **Document Search** — For your embedded PDFs
+- **Direct Reasoning** — For general knowledge
 
-Create a `data/` folder and add PDF files, then use the RAG module:
+### Embed your PDFs (one-time setup)
+
+1. Place PDF files in the `data/` folder
+2. Run the setup script:
+   ```bash
+   python SETUP_RAG.py
+   ```
+3. This embeds all PDFs and stores them in `./chroma_db` (one-time operation)
+4. Now run the agent and ask questions about your documents:
+   ```bash
+   python run.py
+   ```
+
+### Example questions
+
+Once PDFs are embedded, you can ask:
+- "What are the main topics in my documents?"
+- "Find information about machine learning"
+- "Summarize the key points"
+
+The agent will use document search automatically when relevant.
+
+### Advanced: Use RAG standalone
 
 ```python
-from app.rag import create_vectorstore
-
-# First time: load and embed PDF
-vectorstore = create_vectorstore(file_path="data/my_document.pdf")
-
-# Next time: load from cache
 from app.rag import load_vectorstore
+
 vectorstore = load_vectorstore()
-
-# Retrieve similar chunks
-results = vectorstore.similarity_search("What is machine learning?", k=3)
+results = vectorstore.similarity_search("your query", k=3)
+for doc in results:
+    print(doc.page_content)
 ```
-
-See `example_rag.py` for full example.
 
 ## How It Works
 
