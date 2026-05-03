@@ -21,6 +21,7 @@ def ollama_is_running(base_url: str) -> bool:
 
 OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
+OLLAMA_EMBED_MODEL: str = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
 
 if not ollama_is_running(OLLAMA_BASE_URL):
     print(f"Could not reach Ollama at {OLLAMA_BASE_URL}.")

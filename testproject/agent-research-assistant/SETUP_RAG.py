@@ -1,36 +1,54 @@
+"""Embed PDFs from data/ into Chroma for document search.
+
+Before running, make sure Ollama has an embedding model:
+    ollama pull nomic-embed-text
 """
-RAG Setup Guide
 
-This shows how to embed your PDF documents so the agent can retrieve from them.
-"""
-
-# Step 1: Create your data folder (already done if you ran mkdir data)
-# Place any PDF files in: agent-research-assistant/data/
-
-# Step 2: Embed your PDFs (one-time setup)
-# Run this once to embed and store your documents:
+from pathlib import Path
 
 from app.rag import create_vectorstore
 
-# Example: embed a single PDF
-vectorstore = create_vectorstore(
-    file_path="data/sample.pdf",
-    collection_name="my_documents"
-)
-print("✓ PDF embedded and stored in ./chroma_db")
 
-# Step 3: Now run the agent
-# python run.py
+def main() -> None:
+    data_dir = Path("data")
+    pdf_files = sorted(data_dir.glob("*.pdf"))
 
-# Step 4: Ask questions about your documents
-# Example questions:
-# - "What is mentioned in the document about X?"
-# - "Summarize the key points from my PDF"
-# - "Find information about Y in my documents"
+    if not pdf_files:
+        print("No PDF files found in data/.")
+        print("Add one or more PDFs, then re-run: python SETUP_RAG.py")
+        return
 
-# The agent will automatically choose between:
-# 1. Web search (for current info)
-# 2. Document search (for your PDFs)
-# 3. Direct reasoning (for general knowledge)
+    success_count = 0
+    failed_files: list[tuple[str, str]] = []
 
-print("\n✓ Setup complete! Run: python run.py")
+    # Process each PDF independently so one bad file doesn't block all indexing.
+    for pdf in pdf_files:
+        try:
+            create_vectorstore(file_path=str(pdf), collection_name="my_documents")
+            success_count += 1
+            print(f"Indexed: {pdf}")
+        except Exception as exc:
+            failed_files.append((str(pdf), str(exc)))
+            print(f"Skipped: {pdf}")
+
+    print("\n--- RAG Setup Summary ---")
+    print(f"Indexed PDFs: {success_count}")
+    print(f"Skipped PDFs: {len(failed_files)}")
+
+    if failed_files:
+        print("\nSkipped file details:")
+        for file_name, reason in failed_files:
+            print(f"- {file_name}: {reason}")
+        print(
+            "\nTip: If a PDF is scanned/image-only, it has no selectable text. "
+            "Use a text-based PDF or OCR it first, then run this script again."
+        )
+
+    if success_count > 0:
+        print("\nSetup complete. Run: python run.py")
+    else:
+        print("\nNo PDFs were indexed. Please fix at least one PDF and retry.")
+
+
+if __name__ == "__main__":
+    main()
