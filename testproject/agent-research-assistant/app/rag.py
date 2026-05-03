@@ -5,10 +5,13 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
 
-from app.config import OLLAMA_BASE_URL, OLLAMA_EMBED_MODEL
+from app.config import OLLAMA_BASE_URL, OLLAMA_EMBED_MODEL, VECTOR_COLLECTION_NAME
 
 
-def create_vectorstore(file_path: str = "data/sample.pdf", collection_name: str = "documents"):
+def create_vectorstore(
+    file_path: str = "data/sample.pdf",
+    collection_name: str = VECTOR_COLLECTION_NAME,
+):
     """
     Load PDF, split into chunks, embed with Ollama, and store in Chroma.
     
@@ -69,7 +72,7 @@ def create_vectorstore(file_path: str = "data/sample.pdf", collection_name: str 
     return vectorstore
 
 
-def load_vectorstore(collection_name: str = "documents"):
+def load_vectorstore(collection_name: str = VECTOR_COLLECTION_NAME):
     """
     Load an existing Chroma vector store from disk.
     

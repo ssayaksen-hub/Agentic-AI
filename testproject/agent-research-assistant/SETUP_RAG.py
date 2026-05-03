@@ -24,7 +24,7 @@ def main() -> None:
     # Process each PDF independently so one bad file doesn't block all indexing.
     for pdf in pdf_files:
         try:
-            create_vectorstore(file_path=str(pdf), collection_name="my_documents")
+            create_vectorstore(file_path=str(pdf))
             success_count += 1
             print(f"Indexed: {pdf}")
         except Exception as exc:
