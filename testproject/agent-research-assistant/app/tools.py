@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_tavily import TavilySearch
 
 from app.rag import create_vectorstore, load_vectorstore
 
@@ -10,7 +10,7 @@ def get_tools():
     Return list of tools: web search + RAG document retrieval.
     """
     # Web search tool
-    search_tool = TavilySearchResults(max_results=5)
+    search_tool = TavilySearch(max_results=5)
 
     # RAG document retrieval tool
     try:
@@ -29,7 +29,7 @@ def get_tools():
 
     def rag_search(query: str) -> str:
         """Search through embedded PDF documents."""
-        docs = retriever.get_relevant_documents(query)
+        docs = retriever.invoke(query)
         if not docs:
             return "No relevant documents found."
         return "\n\n".join([doc.page_content for doc in docs])
@@ -47,5 +47,5 @@ try:
     tools = get_tools()
 except Exception:
     # Fallback to just web search if there's an error
-    tools = [TavilySearchResults(max_results=5)]
+    tools = [TavilySearch(max_results=5)]
 
