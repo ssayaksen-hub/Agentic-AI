@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from .agent import create_agent
+from .agent import create_agent, thread_config
 from .prompts import SYSTEM_PROMPT
 
 app = FastAPI()
@@ -38,7 +38,10 @@ def _extract_answer(response: object) -> str:
 @app.post("/chat")
 def chat(query: Query):
     full_prompt = f"{SYSTEM_PROMPT}\n\nQuestion: {query.question}"
-    response = agent.invoke(full_prompt)
+    response = agent.invoke(
+        {"messages": [{"role": "user", "content": full_prompt}]},
+        config=thread_config,
+    )
     return {"answer": _extract_answer(response)}
 
 
