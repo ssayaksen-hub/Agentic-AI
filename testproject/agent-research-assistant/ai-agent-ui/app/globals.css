@@ -1,11 +1,9 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* Background */
 body {
-  background: radial-gradient(circle at top, #0f172a, #020617);
-  color: white;
+  background: radial-gradient(circle at top, #dbeafe, #f8fafc);
+  color: #0f172a;
 }
 
 /* Scrollbar (futuristic minimal) */
@@ -14,7 +12,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #6366f1;
+  background: #94a3b8;
   border-radius: 10px;
 }
 

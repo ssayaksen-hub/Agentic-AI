@@ -60,66 +60,62 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.18),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.12),transparent_40%),#020617] text-slate-100">
-      <div className="mx-auto flex h-screen w-full max-w-5xl flex-col px-4 py-4 sm:px-6 sm:py-6">
-        <header className="rounded-2xl border border-cyan-200/20 bg-slate-900/60 px-5 py-4 backdrop-blur-xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">
-            Agent Console
-          </p>
-          <h1 className="mt-1 text-xl font-semibold text-white sm:text-2xl">AI Research Assistant</h1>
-          <p className="mt-1 text-sm text-slate-300">Ask anything or summarize your indexed PDF content.</p>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#dbeafe_0%,#eef6ff_34%,#f8fafc_70%)] text-slate-900">
+      <div className="mx-auto flex h-screen w-full max-w-5xl flex-col px-4 py-5 sm:px-6 sm:py-6">
+        <header className="rounded-2xl border border-slate-200 bg-white/90 px-5 py-4 shadow-sm backdrop-blur">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Research Assistant</p>
+          <h1 className="mt-1 text-xl font-semibold text-slate-900 sm:text-2xl">AI Research Assistant</h1>
+          <div className="mt-3 inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs text-sky-700">
+            Try: &quot;Summarize my PDF document&quot; or ask a research question.
+          </div>
         </header>
 
-        <section className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900/50 shadow-[0_24px_70px_-40px_rgba(34,211,238,0.55)] backdrop-blur-xl">
-          <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
-            {messages.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-cyan-200/30 bg-slate-800/60 p-4 text-sm text-slate-300">
-                Try: &quot;Summarize my PDF document&quot; or ask a research question.
-              </div>
-            ) : null}
-
+        <section className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_40px_-24px_rgba(15,23,42,0.35)]">
+          <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/70 p-4 sm:p-6">
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`max-w-[88%] rounded-2xl px-5 py-3 text-sm leading-6 shadow-md transition hover:scale-[1.01] ${
+                className={`max-w-[88%] rounded-2xl px-5 py-3 text-sm leading-6 shadow-sm transition hover:scale-[1.01] ${
                   msg.role === "user"
-                    ? "ml-auto border border-cyan-300/30 bg-gradient-to-r from-cyan-500 to-sky-500 text-white"
-                    : "mr-auto border border-white/10 bg-white/10 text-white"
+                    ? "ml-auto border border-sky-200 bg-sky-100 text-slate-900"
+                    : "mr-auto border border-slate-200 bg-white text-slate-800"
                 }`}
               >
-                <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                   {msg.role === "user" ? "You" : "Assistant"}
                 </p>
                 <p className="whitespace-pre-wrap">{msg.content}</p>
               </div>
             ))}
 
-            {loading ? <div className="animate-pulse text-cyan-300">Thinking...</div> : null}
+            {loading ? <div className="animate-pulse text-slate-500">Thinking...</div> : null}
             <div ref={bottomRef} />
           </div>
 
-          <div className="border-t border-white/10 bg-slate-950/45 p-3 sm:p-4">
-            <div className="flex items-end gap-2 sm:gap-3">
-              <textarea
-                className="max-h-40 min-h-12 flex-1 resize-y rounded-xl border border-cyan-200/20 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/35 focus:outline-none"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your question..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void sendMessage();
-                  }
-                }}
-              />
+          <div className="border-t border-slate-200 bg-white p-4 sm:p-5">
+            <div className="mx-auto w-full max-w-4xl">
+              <div className="flex items-end gap-3 rounded-2xl border border-slate-300 bg-slate-50 px-3 py-3 shadow-sm">
+                <textarea
+                  className="max-h-48 min-h-16 flex-1 resize-y bg-transparent px-2 py-2 text-base text-slate-900 placeholder:text-slate-500 focus:outline-none"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="ask the Void"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      void sendMessage();
+                    }
+                  }}
+                />
 
-              <button
-                onClick={() => void sendMessage()}
-                disabled={loading || !input.trim()}
-                className="rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-slate-500"
-              >
-                {loading ? "..." : "Send"}
-              </button>
+                <button
+                  onClick={() => void sendMessage()}
+                  disabled={loading || !input.trim()}
+                  className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                >
+                  {loading ? "..." : "Send"}
+                </button>
+              </div>
             </div>
           </div>
         </section>
