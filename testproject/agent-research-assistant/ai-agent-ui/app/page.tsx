@@ -664,7 +664,10 @@ export default function Home() {
 
         {/* Chat list */}
         <div className="flex-1 space-y-0.5 overflow-y-auto">
-          {chats.map((chat, index) => {
+          {chats
+            .map((chat, index) => ({ chat, index }))
+            .filter(({ chat }) => chat.messages.some((m) => m.role === "user"))
+            .map(({ chat, index }) => {
             const lastQuestion =
               [...chat.messages].reverse().find((m) => m.role === "user")?.content ?? `Chat ${index + 1}`;
             const label = lastQuestion.length > 22 ? lastQuestion.slice(0, 22) + "…" : lastQuestion;
