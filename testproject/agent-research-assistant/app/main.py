@@ -76,7 +76,8 @@ def chat(query: Query):
                 "Answer using the provided document context first."
             )
 
-    full_prompt = f"{SYSTEM_PROMPT}\n\nQuestion: {query_for_agent}"
+    base_prompt = DEEP_RESEARCH_PROMPT if query.mode == "deep" else SYSTEM_PROMPT
+    full_prompt = f"{base_prompt}\n\nQuestion: {query_for_agent}"
     response = agent.invoke(
         {"messages": [{"role": "user", "content": full_prompt}]},
         config=thread_config,

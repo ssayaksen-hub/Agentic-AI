@@ -517,6 +517,38 @@ export default function Home() {
     setSteps([]);
 
     try {
+      if (mode === "deep") {
+        setSteps([
+          "Planning deep research",
+          "Collecting sources",
+          "Synthesizing findings",
+        ]);
+
+        const deepRes = await fetch("http://127.0.0.1:8000/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question, mode: "deep" }),
+        });
+
+        if (!deepRes.ok) {
+          const errText = await deepRes.text();
+          chat.messages.push({
+            role: "ai",
+            content: `Deep research failed (${deepRes.status}): ${errText || "Unable to complete deep mode request."}`,
+          });
+          setChats([...updatedChats]);
+          return;
+        }
+
+        const deepData = (await deepRes.json()) as { answer?: string };
+        chat.messages.push({
+          role: "ai",
+          content: deepData.answer?.trim() || "No answer received in deep mode.",
+        });
+        setChats([...updatedChats]);
+        return;
+      }
+
       const res = await fetch("http://127.0.0.1:8000/chat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
