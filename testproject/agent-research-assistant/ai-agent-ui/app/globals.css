@@ -2,18 +2,22 @@
 
 /* Background */
 body {
-  background: radial-gradient(circle at top, #dbeafe, #f8fafc);
+  background: #f7f7f8;
   color: #0f172a;
 }
 
 /* Scrollbar (futuristic minimal) */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #94a3b8;
+  background: #cbd5e1;
   border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .glow {
