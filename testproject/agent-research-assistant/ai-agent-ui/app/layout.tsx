@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cinzel_Decorative, Geist, Geist_Mono } from "next/font/google";
+import { Aladin, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,10 +12,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const genieDisplay = Cinzel_Decorative({
+const genieDisplay = Aladin({
   variable: "--font-genie-display",
   subsets: ["latin"],
-  weight: ["700"],
+  weight: ["400"],
 });
 
 export const metadata: Metadata = {

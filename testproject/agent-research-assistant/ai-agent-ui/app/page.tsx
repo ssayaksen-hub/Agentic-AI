@@ -69,7 +69,7 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-[#f7f3eb] text-slate-800">
-      <div className="flex w-64 flex-col border-r border-[#e6dfd2] bg-[#efe8da] p-4">
+      <div className="flex w-56 flex-col border-r border-[#e6dfd2] bg-[#efe8da] p-4">
         <button
           onClick={createNewChat}
           className="mb-4 rounded-xl border border-[#d7cdb8] bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-[#f8f4ea]"
@@ -95,7 +95,7 @@ export default function Home() {
       </div>
 
       <div className="flex flex-1 flex-col">
-        <div className="font-genie border-b border-[#e6dfd2] bg-[#f7f3eb] p-4 text-center text-3xl font-semibold tracking-wide text-slate-700">
+        <div className="font-genie border-b border-[#e6dfd2] bg-[#f7f3eb] p-4 text-center text-5xl leading-none tracking-wide text-slate-700">
           Genie
         </div>
 
@@ -118,22 +118,29 @@ export default function Home() {
           <div ref={bottomRef} />
         </div>
 
-        <div className="flex gap-3 border-t border-[#e6dfd2] bg-[#f7f3eb] p-4">
-          <input
-            className="flex-1 rounded-xl border border-[#d6ccb8] bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-[#b8ab92] focus:outline-none"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask the void..."
-            onKeyDown={(e) => e.key === "Enter" && void sendMessage()}
-          />
+        <div className="bg-[#f7f3eb] px-6 pt-3 pb-7">
+          <div className="mx-auto flex w-full max-w-4xl items-end gap-3 rounded-2xl border border-[#d6ccb8] bg-white px-3 py-3 shadow-sm">
+            <textarea
+              className="min-h-[64px] flex-1 resize-y rounded-xl px-3 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask the void..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void sendMessage();
+                }
+              }}
+            />
 
-          <button
-            onClick={() => void sendMessage()}
-            disabled={loading}
-            className="rounded-xl bg-[#2f2f2f] px-4 py-2 text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-slate-400"
-          >
-            Send
-          </button>
+            <button
+              onClick={() => void sendMessage()}
+              disabled={loading}
+              className="rounded-xl bg-[#2f2f2f] px-5 py-2.5 text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              Send
+            </button>
+          </div>
         </div>
       </div>
     </div>
