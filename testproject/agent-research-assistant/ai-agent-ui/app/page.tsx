@@ -12,7 +12,16 @@ type Message = {
 type Chat = {
   id: number;
   messages: Message[];
+  mode?: "normal" | "deep";
 };
+
+const DEFAULT_LAMP_TOPICS = [
+  "Global inflation outlook in 2026",
+  "AI regulation trends across major economies",
+  "Semiconductor geopolitics and supply chains",
+  "Energy transition: nuclear vs renewables",
+  "Water security and climate adaptation",
+];
 
 // ── Inline markdown renderer ─────────────────────────────────────────────────
 
@@ -327,9 +336,21 @@ function LampView({
       setTopicsError(false);
       try {
         const r = await fetch("http://127.0.0.1:8000/lamp/topics");
-        const data = (await r.json()) as { topics: string[] };
-        setTopics(data.topics ?? []);
+        if (!r.ok) {
+          throw new Error(`lamp/topics failed: ${r.status}`);
+        }
+        const data = (await r.json()) as { topics?: string[]; error?: string };
+        const fetched = Array.isArray(data.topics) ? data.topics : [];
+        if (fetched.length > 0) {
+          setTopics(fetched);
+        } else {
+          setTopics(DEFAULT_LAMP_TOPICS);
+          if (data.error) {
+            setTopicsError(true);
+          }
+        }
       } catch {
+        setTopics(DEFAULT_LAMP_TOPICS);
         setTopicsError(true);
       } finally {
         setTopicsLoading(false);
@@ -439,12 +460,15 @@ function StubView({ title, icon }: { title: string; icon: string }) {
 type SidebarView = "chat" | "artifacts" | "projects" | "lamp";
 
 export default function Home() {
-  const [chats, setChats] = useState<Chat[]>([{ id: 0, messages: [] }]);
+  const [chats, setChats] = useState<Chat[]>([{ id: 0, messages: [], mode: "normal" }]);
   const [currentChatIndex, setCurrentChatIndex] = useState<number | null>(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingChatId, setLoadingChatId] = useState<number | null>(null);
   const [steps, setSteps] = useState<string[]>([]);
   const [sidebarView, setSidebarView] = useState<SidebarView>("chat");
+
+  const selectedChat = currentChatIndex === null ? null : (chats[currentChatIndex] ?? null);
 
   const messages = useMemo(
     () => (currentChatIndex === null ? [] : (chats[currentChatIndex]?.messages ?? [])),
@@ -459,21 +483,37 @@ export default function Home() {
   }, [messages, loading, steps]);
 
   const createNewChat = () => {
-    const newChat: Chat = { id: Date.now(), messages: [] };
+    const newChat: Chat = { id: Date.now(), messages: [], mode: "normal" };
     setChats((prev) => [...prev, newChat]);
     setCurrentChatIndex(chats.length);
   };
 
-  const sendMessage = async (overrideQuestion?: string, mode: "normal" | "deep" = "normal") => {
+  const sendMessage = async (
+    overrideQuestion?: string,
+    mode: "normal" | "deep" = "normal",
+    forceNewChat = false,
+  ) => {
     const question = (overrideQuestion ?? input).trim();
-    if (!question || currentChatIndex === null) return;
+    if (!question) return;
 
     const updatedChats = [...chats];
-    const chat = updatedChats[currentChatIndex];
+    let targetIndex = currentChatIndex;
+
+    if (forceNewChat || targetIndex === null || !updatedChats[targetIndex]) {
+      updatedChats.push({ id: Date.now(), messages: [], mode });
+      targetIndex = updatedChats.length - 1;
+      setCurrentChatIndex(targetIndex);
+    }
+
+    const chat = updatedChats[targetIndex];
+    if (mode === "deep") {
+      chat.mode = "deep";
+    }
     chat.messages.push({ role: "user", content: question });
     setChats(updatedChats);
     setInput("");
     setLoading(true);
+    setLoadingChatId(chat.id);
     setSteps([]);
 
     try {
@@ -491,6 +531,7 @@ export default function Home() {
         });
         setChats([...updatedChats]);
         setLoading(false);
+        setLoadingChatId(null);
         setSteps([]);
         return;
       }
@@ -502,6 +543,7 @@ export default function Home() {
         });
         setChats([...updatedChats]);
         setLoading(false);
+        setLoadingChatId(null);
         setSteps([]);
         return;
       }
@@ -561,20 +603,15 @@ export default function Home() {
       setChats([...updatedChats]);
     } finally {
       setLoading(false);
+      setLoadingChatId(null);
       setSteps([]);
     }
   };
 
   // "Rub The Lamp" callback: create new deep-research chat and send
   const handleLampResearch = (topic: string) => {
-    const newChat: Chat = { id: Date.now(), messages: [] };
-    const newIndex = chats.length;
-    setChats((prev) => [...prev, newChat]);
-    setCurrentChatIndex(newIndex);
     setSidebarView("chat");
-    setTimeout(() => {
-      void sendMessage(topic, "deep");
-    }, 0);
+    void sendMessage(topic, "deep", true);
   };
 
   return (
@@ -628,20 +665,27 @@ export default function Home() {
         {/* Chat list */}
         <div className="flex-1 space-y-0.5 overflow-y-auto">
           {chats.map((chat, index) => {
-            const lastQuestion = chat.messages.find((m) => m.role === "user")?.content ?? `Chat ${index + 1}`;
+            const lastQuestion =
+              [...chat.messages].reverse().find((m) => m.role === "user")?.content ?? `Chat ${index + 1}`;
             const label = lastQuestion.length > 22 ? lastQuestion.slice(0, 22) + "…" : lastQuestion;
+            const isDeepChat = chat.mode === "deep";
             return (
               <div
                 key={chat.id}
                 onClick={() => { setCurrentChatIndex(index); setSidebarView("chat"); }}
-                className={`cursor-pointer truncate rounded-lg px-2 py-1.5 text-sm transition ${
+                className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm transition ${
                   sidebarView === "chat" && index === currentChatIndex
                     ? "font-medium text-slate-900"
                     : "text-slate-500 hover:text-slate-700"
                 }`}
                 title={lastQuestion}
               >
-                {label}
+                <span className="truncate">{label}</span>
+                {isDeepChat && (
+                  <span className="rounded-full border border-[#d9c8a8] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#8b6a34]">
+                    Deep
+                  </span>
+                )}
               </div>
             );
           })}
@@ -667,8 +711,8 @@ export default function Home() {
         {/* Messages */}
         {hasStarted ? (
           <div className="h-full w-full space-y-4 overflow-y-auto bg-[#f9f6ef] px-6 pt-28 pb-44">
-            {currentChatIndex !== null &&
-              chats[currentChatIndex].messages.map((msg: Message, i: number) => (
+            {selectedChat &&
+              selectedChat.messages.map((msg: Message, i: number) => (
                 <div
                   key={i}
                   className={`max-w-2xl rounded-2xl px-5 py-3 shadow-sm ${
@@ -681,7 +725,7 @@ export default function Home() {
                 </div>
               ))}
 
-            {loading && <ThinkingCloud steps={steps} />}
+            {loading && selectedChat?.id === loadingChatId && <ThinkingCloud steps={steps} />}
             <div ref={bottomRef} />
           </div>
         ) : null}
