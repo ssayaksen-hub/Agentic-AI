@@ -1,4 +1,5 @@
 import json
+import time
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -89,6 +90,9 @@ _TOOL_LABELS: dict[str, str] = {
     "tavily_search_results_json": "Searching the web",
     "document_search": "Searching your documents",
 }
+
+_LAMP_TOPICS_CACHE: dict[str, object] = {"topics": [], "ts": 0.0}
+_LAMP_TOPICS_TTL_SECONDS = 600
 
 
 def _tool_label(name: str) -> str:
@@ -191,7 +195,17 @@ def lamp_topics():
     """Return 8 current-event topic suggestions using Tavily web search."""
     from langchain_tavily import TavilySearch  # noqa: PLC0415
 
-    searcher = TavilySearch(max_results=8)
+    now = time.time()
+    cached_topics = _LAMP_TOPICS_CACHE.get("topics", [])
+    cached_ts = float(_LAMP_TOPICS_CACHE.get("ts", 0.0))
+    if isinstance(cached_topics, list) and cached_topics and (now - cached_ts) < _LAMP_TOPICS_TTL_SECONDS:
+        return {"topics": cached_topics, "cached": True}
+
+    searcher = TavilySearch(
+        max_results=5,
+        search_depth="basic",
+        include_raw_content=False,
+    )
     try:
         results = searcher.invoke("top news stories and trending topics today")
         topics: list[str] = []
@@ -205,7 +219,10 @@ def lamp_topics():
                 title = item.get("title", "")
                 if title and len(title) < 120:
                     topics.append(title.strip())
-        return {"topics": topics[:8]}
+        deduped = list(dict.fromkeys(topics))[:5]
+        _LAMP_TOPICS_CACHE["topics"] = deduped
+        _LAMP_TOPICS_CACHE["ts"] = now
+        return {"topics": deduped, "cached": False}
     except Exception as exc:  # noqa: BLE001
         return {"topics": [], "error": str(exc)}
 

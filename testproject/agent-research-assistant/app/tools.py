@@ -57,7 +57,11 @@ def get_tools():
     Return list of tools: web search + RAG document retrieval.
     """
     # Web search tool
-    search_tool = TavilySearch(max_results=5)
+    search_tool = TavilySearch(
+        max_results=3,
+        search_depth="basic",
+        include_raw_content=False,
+    )
 
     # RAG document retrieval tool
     return [search_tool, document_search]
@@ -69,5 +73,11 @@ try:
     tools = get_tools()
 except Exception:
     # Fallback to just web search if there's an error
-    tools = [TavilySearch(max_results=5)]
+    tools = [
+        TavilySearch(
+            max_results=3,
+            search_depth="basic",
+            include_raw_content=False,
+        )
+    ]
 
