@@ -316,7 +316,23 @@ function LampView({ onResearch }: { onResearch: (topic: string) => void }) {
     <div className="flex h-full w-full flex-col items-center justify-center gap-8 overflow-y-auto px-8 py-12">
       {/* Header */}
       <div className="text-center">
-        <div className="font-genie mb-1 text-4xl text-slate-700">🪔 Rub The Lamp</div>
+        <div className="font-genie mb-1 flex items-center justify-center gap-3 text-4xl text-slate-700">
+          <svg viewBox="0 0 64 40" className="h-12 w-20" xmlns="http://www.w3.org/2000/svg" fill="none">
+            {/* Lamp body */}
+            <ellipse cx="28" cy="28" rx="20" ry="8" fill="#c8a96e" opacity="0.3"/>
+            <path d="M10 26 Q8 18 16 14 Q24 10 34 16 Q42 20 44 26 Z" fill="#d4a843"/>
+            {/* Spout */}
+            <path d="M44 22 Q52 18 58 20 Q54 26 44 26 Z" fill="#c8953a"/>
+            {/* Handle */}
+            <path d="M10 24 Q2 20 4 14 Q6 8 12 12" stroke="#c8953a" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+            {/* Lid */}
+            <path d="M22 14 Q28 8 34 14" stroke="#b8842a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+            {/* Smoke/genie wisps */}
+            <path d="M28 10 Q32 4 28 0" stroke="#b0a080" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.5"/>
+            <path d="M28 10 Q24 5 28 1" stroke="#b0a080" strokeWidth="1" fill="none" strokeLinecap="round" opacity="0.3"/>
+          </svg>
+          Rub The Lamp
+        </div>
         <p className="text-sm text-slate-400">
           Pick a current topic for a deep-dive investigation, or type your own.
         </p>
@@ -553,49 +569,69 @@ export default function Home() {
         {/* New Chat */}
         <button
           onClick={() => { createNewChat(); setSidebarView("chat"); }}
-          className="mb-4 whitespace-nowrap rounded-xl border border-[#d7cdb8] bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-[#f8f4ea]"
+          className="mb-3 whitespace-nowrap rounded-xl border border-[#d7cdb8] bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-[#f8f4ea]"
         >
           + New Chat
         </button>
 
-        {/* Chat list */}
-        <div className="flex-1 space-y-1 overflow-y-auto">
-          {chats.map((chat, index) => (
+        {/* Nav items — shown directly under New Chat */}
+        <div className="mb-3 space-y-0.5 border-b border-[#ddd4c0] pb-3">
+          {([
+            { view: "lamp" as SidebarView, label: "Rub The Lamp", icon: (
+              <svg viewBox="0 0 24 24" className="h-4 w-4 flex-shrink-0 fill-current" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19.5 10c-1.1 0-2.1.4-2.9 1L14 8.4V7a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v1.4L4.4 11A4.5 4.5 0 1 0 8 18.9V20h8v-1.1A4.5 4.5 0 0 0 19.5 10zM6 18a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm13.5 0a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>
+                <path d="M9 7h6v1H9z"/>
+                <path d="M11 2h2v3h-2z" opacity=".6"/>
+              </svg>
+            ), highlight: true },
+            { view: "artifacts" as SidebarView, label: "Artifacts", icon: (
+              <svg viewBox="0 0 24 24" className="h-4 w-4 flex-shrink-0 fill-current opacity-60" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h10v2H4z"/>
+              </svg>
+            ), highlight: false },
+            { view: "projects" as SidebarView, label: "Projects", icon: (
+              <svg viewBox="0 0 24 24" className="h-4 w-4 flex-shrink-0 fill-current opacity-60" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z"/>
+              </svg>
+            ), highlight: false },
+          ] as { view: SidebarView; label: string; icon: React.ReactNode; highlight: boolean }[]).map(({ view, label, icon, highlight }) => (
             <div
-              key={chat.id}
-              onClick={() => { setCurrentChatIndex(index); setSidebarView("chat"); }}
-              className={`cursor-pointer whitespace-nowrap rounded-lg px-2 py-1.5 text-sm transition ${
-                sidebarView === "chat" && index === currentChatIndex
-                  ? "border border-[#d7cdb8] bg-white text-slate-900"
-                  : "text-slate-600 hover:bg-[#f7f0e2]"
+              key={view}
+              onClick={() => setSidebarView(view)}
+              className={`flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg px-2 py-1.5 text-sm transition ${
+                sidebarView === view
+                  ? "font-medium text-slate-900"
+                  : highlight
+                  ? "text-[#7b5e2a] hover:text-[#5a4020]"
+                  : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              Chat {index + 1}
+              {icon}
+              {label}
             </div>
           ))}
         </div>
 
-        {/* Bottom nav */}
-        <div className="mt-4 space-y-1 border-t border-[#ddd4c0] pt-4">
-          {([
-            { view: "lamp" as SidebarView, label: "🪔 Rub The Lamp", highlight: true },
-            { view: "artifacts" as SidebarView, label: "🗂 Artifacts", highlight: false },
-            { view: "projects" as SidebarView, label: "📁 Projects", highlight: false },
-          ]).map(({ view, label, highlight }) => (
-            <button
-              key={view}
-              onClick={() => setSidebarView(view)}
-              className={`w-full whitespace-nowrap rounded-lg px-2 py-2 text-left text-sm font-medium transition ${
-                sidebarView === view
-                  ? "border border-[#d7cdb8] bg-white text-slate-900"
-                  : highlight
-                  ? "text-[#7b5e2a] hover:bg-[#f0e8d5]"
-                  : "text-slate-500 hover:bg-[#f0ebe0]"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+        {/* Chat list */}
+        <div className="flex-1 space-y-0.5 overflow-y-auto">
+          {chats.map((chat, index) => {
+            const lastQuestion = chat.messages.find((m) => m.role === "user")?.content ?? `Chat ${index + 1}`;
+            const label = lastQuestion.length > 22 ? lastQuestion.slice(0, 22) + "…" : lastQuestion;
+            return (
+              <div
+                key={chat.id}
+                onClick={() => { setCurrentChatIndex(index); setSidebarView("chat"); }}
+                className={`cursor-pointer truncate rounded-lg px-2 py-1.5 text-sm transition ${
+                  sidebarView === "chat" && index === currentChatIndex
+                    ? "font-medium text-slate-900"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+                title={lastQuestion}
+              >
+                {label}
+              </div>
+            );
+          })}
         </div>
       </div>
 
