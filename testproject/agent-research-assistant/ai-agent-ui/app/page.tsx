@@ -325,43 +325,50 @@ function GenieLampIcon({ className = "h-5 w-8" }: { className?: string }) {
   );
 }
 
-function GenieThinkingLogo({ className = "h-12 w-14" }: { className?: string }) {
+function GenieThinkingLogo({ className = "h-16 w-20" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 80 80" className={className} xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 96 96" className={className} xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="genieBody" x1="32" y1="26" x2="72" y2="76" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#8da5bd" />
+          <stop offset="1" stopColor="#5e7690" />
+        </linearGradient>
+      </defs>
+
       {/* Lamp */}
-      <ellipse cx="27" cy="61" rx="18" ry="7" fill="#c8a96e" opacity="0.25" />
-      <path d="M10 58 Q8 50 16 45 Q25 40 36 47 Q44 52 46 58 Z" fill="#d4a843" />
-      <path d="M46 54 Q55 50 62 52 Q58 58 46 58 Z" fill="#c8953a" />
-      <path d="M11 56 Q4 52 6 47 Q8 42 13 45" stroke="#c8953a" strokeWidth="2.5" strokeLinecap="round" />
+      <ellipse cx="35" cy="77" rx="26" ry="8" fill="#c8a96e" opacity="0.2" />
+      <path d="M14 71 C12 59 25 52 41 54 C55 56 63 63 65 71 Z" fill="#d2a247" />
+      <path d="M65 66 C74 61 83 62 89 66 C84 73 75 74 65 72 Z" fill="#be8d34" />
+      <path d="M15 69 C6 64 8 56 14 56" stroke="#be8d34" strokeWidth="3" strokeLinecap="round" />
+      <path d="M33 53 C39 47 47 47 53 53" stroke="#ab7c2c" strokeWidth="2.4" strokeLinecap="round" />
 
-      {/* Genie body cloud */}
-      <path
-        d="M42 45 C34 42 30 35 33 29 C36 22 43 20 49 23 C52 18 58 17 62 21 C66 25 66 31 62 35 C65 41 61 46 55 47 C51 48 47 47 42 45 Z"
-        fill="#7f95ad"
-      />
+      {/* Genie swirl */}
+      <path d="M46 58 C36 56 30 48 32 40 C34 30 44 24 53 29 C58 22 67 21 73 27 C79 33 78 43 70 48 C72 56 67 62 58 63 C53 64 49 62 46 58 Z" fill="url(#genieBody)" />
+      <path d="M47 58 C44 68 35 71 28 70 C34 66 38 62 39 57" stroke="#6f87a0" strokeWidth="2" strokeLinecap="round" />
 
-      {/* Genie head */}
-      <circle cx="50" cy="27" r="10" fill="#f0c9a4" />
+      {/* Head */}
+      <circle cx="57" cy="34" r="11" fill="#efc6a4" />
+      <path d="M47 33 C47 28 51 24 57 24 C63 24 67 28 67 33" fill="#5b6e84" />
 
       {/* Glasses */}
-      <circle cx="46" cy="27" r="2.8" stroke="#334155" strokeWidth="1.6" />
-      <circle cx="54" cy="27" r="2.8" stroke="#334155" strokeWidth="1.6" />
-      <path d="M48.8 27 H51.2" stroke="#334155" strokeWidth="1.4" />
+      <circle cx="53" cy="35" r="3.2" stroke="#1f2937" strokeWidth="1.8" />
+      <circle cx="61" cy="35" r="3.2" stroke="#1f2937" strokeWidth="1.8" />
+      <path d="M56.2 35 H57.8" stroke="#1f2937" strokeWidth="1.6" />
 
-      {/* Eyes and brow */}
-      <circle cx="46" cy="27" r="0.8" fill="#1f2937" />
-      <circle cx="54" cy="27" r="0.8" fill="#1f2937" />
-      <path d="M43 23.7 C44.7 22.8 47.4 22.8 49 23.6" stroke="#715547" strokeWidth="1" strokeLinecap="round" />
-      <path d="M51 23.6 C52.8 22.8 55.2 22.8 57 23.7" stroke="#715547" strokeWidth="1" strokeLinecap="round" />
+      {/* Face */}
+      <circle cx="53" cy="35" r="0.9" fill="#111827" />
+      <circle cx="61" cy="35" r="0.9" fill="#111827" />
+      <path d="M57 38 C56 39 56.4 40 57.6 40" stroke="#9c6c53" strokeWidth="1" strokeLinecap="round" />
+      <path d="M54 42 C56 43.5 58 43.5 60 42" stroke="#9c6c53" strokeWidth="1.2" strokeLinecap="round" />
 
-      {/* Thinking pose: hand on chin */}
-      <path d="M56 34 C57 36 56.4 39 53.8 40" stroke="#f0c9a4" strokeWidth="3" strokeLinecap="round" />
-      <circle cx="53.2" cy="40.2" r="1.5" fill="#f0c9a4" />
+      {/* Thinking pose hand */}
+      <path d="M63 43 C66 46 65.5 50.5 61.5 52" stroke="#efc6a4" strokeWidth="3.2" strokeLinecap="round" />
+      <circle cx="60.8" cy="52" r="1.7" fill="#efc6a4" />
 
       {/* Thought bubbles */}
-      <circle cx="64" cy="15" r="2.3" fill="#c8d5e4" opacity="0.85" />
-      <circle cx="69" cy="10" r="1.6" fill="#c8d5e4" opacity="0.75" />
-      <circle cx="72" cy="6" r="1.1" fill="#c8d5e4" opacity="0.65" />
+      <circle cx="75" cy="21" r="2.8" fill="#c9d8e7" opacity="0.9" />
+      <circle cx="82" cy="15" r="2" fill="#c9d8e7" opacity="0.75" />
+      <circle cx="87" cy="10" r="1.3" fill="#c9d8e7" opacity="0.65" />
     </svg>
   );
 }
@@ -830,7 +837,7 @@ export default function Home() {
           }`}
         >
           <div className="flex items-center justify-center gap-3">
-            <GenieThinkingLogo className={hasStarted ? "h-10 w-12" : "h-16 w-20"} />
+            <GenieThinkingLogo className={hasStarted ? "h-14 w-16" : "h-20 w-24"} />
             <span>Genie</span>
           </div>
         </div>
