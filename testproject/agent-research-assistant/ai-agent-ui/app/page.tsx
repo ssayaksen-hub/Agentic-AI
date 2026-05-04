@@ -223,47 +223,92 @@ export default function Home() {
     setLoading(true);
     setSteps([]);
 
-    const res = await fetch("http://127.0.0.1:8000/chat/stream", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
-    });
+    try {
+      const res = await fetch("http://127.0.0.1:8000/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
 
-    const reader = res.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
+      if (!res.ok) {
+        const errText = await res.text();
+        chat.messages.push({
+          role: "ai",
+          content: `Request failed (${res.status}): ${errText || "Unable to reach streaming endpoint."}`,
+        });
+        setChats([...updatedChats]);
+        setLoading(false);
+        setSteps([]);
+        return;
+      }
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
+      if (!res.body) {
+        chat.messages.push({
+          role: "ai",
+          content: "No stream body received from server.",
+        });
+        setChats([...updatedChats]);
+        setLoading(false);
+        setSteps([]);
+        return;
+      }
 
-      for (const line of lines) {
-        if (!line.startsWith("data: ")) continue;
-        try {
-          const event = JSON.parse(line.slice(6)) as { type: string; text?: string };
-          if (event.type === "step" && event.text) {
-            setSteps((prev) => [...prev, event.text!]);
-          } else if (event.type === "answer" && event.text) {
-            chat.messages.push({ role: "ai", content: event.text });
-            setChats([...updatedChats]);
-            setLoading(false);
-            setSteps([]);
-          } else if (event.type === "done") {
-            setLoading(false);
-            setSteps([]);
-          } else if (event.type === "error") {
-            chat.messages.push({ role: "ai", content: `Error: ${event.text ?? "unknown"}` });
-            setChats([...updatedChats]);
-            setLoading(false);
-            setSteps([]);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let answerReceived = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE events are separated by double newlines.
+        const chunks = buffer.split("\n\n");
+        buffer = chunks.pop() ?? "";
+
+        for (const chunk of chunks) {
+          const dataLine = chunk
+            .split("\n")
+            .find((line) => line.startsWith("data: "));
+          if (!dataLine) continue;
+
+          try {
+            const event = JSON.parse(dataLine.slice(6)) as { type: string; text?: string };
+            if (event.type === "step" && event.text) {
+              const stepText = event.text;
+              setSteps((prev) => [...prev, stepText]);
+            } else if (event.type === "answer" && event.text) {
+              chat.messages.push({ role: "ai", content: event.text });
+              setChats([...updatedChats]);
+              answerReceived = true;
+            } else if (event.type === "error") {
+              chat.messages.push({ role: "ai", content: `Error: ${event.text ?? "unknown"}` });
+              setChats([...updatedChats]);
+              answerReceived = true;
+            }
+          } catch {
+            // malformed SSE event chunk — ignore
           }
-        } catch {
-          // malformed SSE line — skip
         }
       }
+
+      if (!answerReceived) {
+        chat.messages.push({
+          role: "ai",
+          content: "I could not produce an answer from the stream. Please retry after restarting the backend server.",
+        });
+        setChats([...updatedChats]);
+      }
+    } catch (error) {
+      chat.messages.push({
+        role: "ai",
+        content: `Network error: ${error instanceof Error ? error.message : "unknown error"}`,
+      });
+      setChats([...updatedChats]);
+    } finally {
+      setLoading(false);
+      setSteps([]);
     }
   };
 

@@ -98,8 +98,23 @@ def _sse(payload: dict) -> str:
     return f"data: {json.dumps(payload)}\n\n"
 
 
+def _message_content_to_text(content: object) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, dict) and "text" in item:
+                parts.append(str(item["text"]))
+            else:
+                parts.append(str(item))
+        return "\n".join(parts)
+    return str(content)
+
+
 def _stream_agent(full_prompt: str):
     """Yield SSE strings from a LangGraph agent stream."""
+    sent_answer = False
     try:
         for chunk in agent.stream(
             {"messages": [{"role": "user", "content": full_prompt}]},
@@ -118,14 +133,26 @@ def _stream_agent(full_prompt: str):
                             )
                             yield _sse({"type": "step", "text": _tool_label(tc_name)})
                     else:
-                        content = getattr(msg, "content", "")
-                        if content and isinstance(content, str):
-                            yield _sse({"type": "answer", "text": content})
+                        content_text = _message_content_to_text(getattr(msg, "content", ""))
+                        if content_text.strip():
+                            yield _sse({"type": "answer", "text": content_text})
+                            sent_answer = True
             elif "tools" in chunk:
                 for msg in chunk["tools"].get("messages", []):
                     tc_name = getattr(msg, "name", "")
                     label = _tool_label(tc_name) if tc_name else "Processing results"
                     yield _sse({"type": "step", "text": f"{label} — done"})
+
+        # Fallback: if the stream completed without final text, run a normal invoke
+        # so the UI always receives an answer event.
+        if not sent_answer:
+            fallback = agent.invoke(
+                {"messages": [{"role": "user", "content": full_prompt}]},
+                config=thread_config,
+            )
+            fallback_answer = _extract_answer(fallback)
+            if fallback_answer.strip():
+                yield _sse({"type": "answer", "text": fallback_answer})
     except Exception as exc:  # noqa: BLE001
         yield _sse({"type": "error", "text": str(exc)})
     yield _sse({"type": "done"})
