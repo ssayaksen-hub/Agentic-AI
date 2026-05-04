@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useState } from "react";
+import { KeyboardEvent, useEffect, useRef, useState } from "react";
 
 type Message = {
   role: "user" | "ai";
@@ -10,18 +10,28 @@ type Message = {
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const sendMessage = async () => {
     const question = input.trim();
-    if (!question || isLoading) return;
+    if (!question || loading) return;
 
     const userMessage: Message = { role: "user", content: question };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setError("");
-    setIsLoading(true);
+    setLoading(true);
 
     try {
       const res = await fetch("http://127.0.0.1:8000/chat", {
@@ -50,7 +60,7 @@ export default function Home() {
         { role: "ai", content: "I could not reach the backend. Start the FastAPI server and try again." },
       ]);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -100,7 +110,7 @@ export default function Home() {
                 messages.map((msg, index) => (
                   <div
                     key={`${msg.role}-${index}`}
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm ${
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-md ${
                       msg.role === "user"
                         ? "ml-auto bg-slate-900 text-white"
                         : "bg-sky-50 text-slate-800 ring-1 ring-sky-100"
@@ -114,16 +124,21 @@ export default function Home() {
                 ))
               )}
 
-              {isLoading ? (
+              {loading ? (
+                <div className="text-gray-500">AI is thinking...</div>
+              ) : null}
+              {loading ? (
                 <div className="max-w-[85%] rounded-2xl bg-sky-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-sky-100">
                   Agent is thinking...
                 </div>
               ) : null}
+              <div ref={bottomRef} />
             </div>
 
             <div className="border-t border-slate-100 px-6 py-5">
               <div className="rounded-3xl border border-slate-200 bg-slate-50 p-3 shadow-inner">
                 <textarea
+                  ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -134,10 +149,10 @@ export default function Home() {
                   <p className="text-xs text-slate-500">Enter to send. Shift+Enter for newline.</p>
                   <button
                     onClick={() => void sendMessage()}
-                    disabled={isLoading || !input.trim()}
+                    disabled={loading || !input.trim()}
                     className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
-                    {isLoading ? "Sending..." : "Send"}
+                    {loading ? "Sending..." : "Send"}
                   </button>
                 </div>
               </div>
