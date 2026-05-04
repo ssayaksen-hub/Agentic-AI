@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from .agent import create_agent, thread_config
-from .prompts import SYSTEM_PROMPT
+from .prompts import DEEP_RESEARCH_PROMPT, SYSTEM_PROMPT
 from .tools import run_document_search
 
 app = FastAPI()
@@ -34,6 +34,7 @@ DOCUMENT_HINT_KEYWORDS = (
 
 class Query(BaseModel):
     question: str
+    mode: str = "normal"  # "normal" | "deep"
 
 
 def _extract_answer(response: object) -> str:
@@ -174,12 +175,39 @@ def chat_stream(query: Query):
                 "Answer using the provided document context first."
             )
 
-    full_prompt = f"{SYSTEM_PROMPT}\n\nQuestion: {query_for_agent}"
+    base_prompt = DEEP_RESEARCH_PROMPT if query.mode == "deep" else SYSTEM_PROMPT
+    full_prompt = f"{base_prompt}\n\nQuestion: {query_for_agent}"
     return StreamingResponse(
         _stream_agent(full_prompt),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# ── Lamp topics ───────────────────────────────────────────────────────────────
+
+@app.get("/lamp/topics")
+def lamp_topics():
+    """Return 8 current-event topic suggestions using Tavily web search."""
+    from langchain_tavily import TavilySearch  # noqa: PLC0415
+
+    searcher = TavilySearch(max_results=8)
+    try:
+        results = searcher.invoke("top news stories and trending topics today")
+        topics: list[str] = []
+        if isinstance(results, list):
+            for item in results:
+                title = item.get("title", "") if isinstance(item, dict) else ""
+                if title and len(title) < 120:
+                    topics.append(title.strip())
+        elif isinstance(results, dict):
+            for item in results.get("results", []):
+                title = item.get("title", "")
+                if title and len(title) < 120:
+                    topics.append(title.strip())
+        return {"topics": topics[:8]}
+    except Exception as exc:  # noqa: BLE001
+        return {"topics": [], "error": str(exc)}
 
 
 def main() -> None:

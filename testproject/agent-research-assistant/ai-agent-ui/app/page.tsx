@@ -287,7 +287,121 @@ function ThinkingCloud({ steps }: { steps: string[] }) {
   );
 }
 
-// ── Main page ────────────────────────────────────────────────────────────────
+// ── Lamp view ────────────────────────────────────────────────────────────────
+
+function LampView({ onResearch }: { onResearch: (topic: string) => void }) {
+  const [topics, setTopics] = useState<string[]>([]);
+  const [topicsLoading, setTopicsLoading] = useState(true);
+  const [topicsError, setTopicsError] = useState(false);
+  const [customTopic, setCustomTopic] = useState("");
+
+  useEffect(() => {
+    const fetchTopics = async () => {
+      setTopicsLoading(true);
+      setTopicsError(false);
+      try {
+        const r = await fetch("http://127.0.0.1:8000/lamp/topics");
+        const data = (await r.json()) as { topics: string[] };
+        setTopics(data.topics ?? []);
+      } catch {
+        setTopicsError(true);
+      } finally {
+        setTopicsLoading(false);
+      }
+    };
+    void fetchTopics();
+  }, []);
+
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-8 overflow-y-auto px-8 py-12">
+      {/* Header */}
+      <div className="text-center">
+        <div className="font-genie mb-1 text-4xl text-slate-700">🪔 Rub The Lamp</div>
+        <p className="text-sm text-slate-400">
+          Pick a current topic for a deep-dive investigation, or type your own.
+        </p>
+      </div>
+
+      {/* Topic chips */}
+      <div className="w-full max-w-2xl">
+        {topicsLoading && (
+          <div className="flex flex-wrap justify-center gap-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-9 w-40 animate-pulse rounded-full bg-[#e8e0d0]" />
+            ))}
+          </div>
+        )}
+        {topicsError && (
+          <p className="text-center text-sm text-slate-400">
+            Could not fetch topics — type your own below.
+          </p>
+        )}
+        {!topicsLoading && !topicsError && topics.length > 0 && (
+          <>
+            <p className="mb-3 text-center text-xs font-medium uppercase tracking-widest text-[#b0a18a]">
+              Trending Now
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {topics.map((topic, i) => (
+                <button
+                  key={i}
+                  onClick={() => onResearch(topic)}
+                  className="rounded-full border border-[#d6ccb8] bg-[#faf6ee] px-4 py-2 text-sm text-slate-700 transition hover:border-[#c4b08a] hover:bg-[#f0e8d5] hover:text-slate-900"
+                >
+                  {topic}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Divider */}
+      <div className="flex w-full max-w-2xl items-center gap-3">
+        <div className="h-px flex-1 bg-[#e0d8cb]" />
+        <span className="text-xs text-[#b0a08a]">or research your own</span>
+        <div className="h-px flex-1 bg-[#e0d8cb]" />
+      </div>
+
+      {/* Custom topic input */}
+      <div className="flex w-full max-w-2xl gap-3">
+        <input
+          type="text"
+          className="flex-1 rounded-xl border border-[#d6ccb8] bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#d9c29d]"
+          placeholder="Enter any topic to research deeply…"
+          value={customTopic}
+          onChange={(e) => setCustomTopic(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && customTopic.trim()) {
+              onResearch(customTopic.trim());
+            }
+          }}
+        />
+        <button
+          onClick={() => { if (customTopic.trim()) onResearch(customTopic.trim()); }}
+          disabled={!customTopic.trim()}
+          className="rounded-xl bg-[#d9c29d] px-5 py-3 font-medium text-slate-900 transition hover:bg-[#ccb089] disabled:cursor-not-allowed disabled:bg-[#d8cfbf]"
+        >
+          Research
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Stub views ────────────────────────────────────────────────────────────────
+
+function StubView({ title, icon }: { title: string; icon: string }) {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center">
+      <span className="text-5xl">{icon}</span>
+      <h2 className="font-genie text-3xl text-slate-600">{title}</h2>
+      <p className="text-sm text-slate-400">Coming soon…</p>
+    </div>
+  );
+}
+
+type SidebarView = "chat" | "artifacts" | "projects" | "lamp";
 
 export default function Home() {
   const [chats, setChats] = useState<Chat[]>([{ id: 0, messages: [] }]);
@@ -295,6 +409,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [steps, setSteps] = useState<string[]>([]);
+  const [sidebarView, setSidebarView] = useState<SidebarView>("chat");
 
   const messages = useMemo(
     () => (currentChatIndex === null ? [] : (chats[currentChatIndex]?.messages ?? [])),
@@ -314,8 +429,8 @@ export default function Home() {
     setCurrentChatIndex(chats.length);
   };
 
-  const sendMessage = async () => {
-    const question = input.trim();
+  const sendMessage = async (overrideQuestion?: string, mode: "normal" | "deep" = "normal") => {
+    const question = (overrideQuestion ?? input).trim();
     if (!question || currentChatIndex === null) return;
 
     const updatedChats = [...chats];
@@ -330,7 +445,7 @@ export default function Home() {
       const res = await fetch("http://127.0.0.1:8000/chat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question, mode }),
       });
 
       if (!res.ok) {
@@ -415,28 +530,42 @@ export default function Home() {
     }
   };
 
+  // "Rub The Lamp" callback: create new deep-research chat and send
+  const handleLampResearch = (topic: string) => {
+    const newChat: Chat = { id: Date.now(), messages: [] };
+    const newIndex = chats.length;
+    setChats((prev) => [...prev, newChat]);
+    setCurrentChatIndex(newIndex);
+    setSidebarView("chat");
+    setTimeout(() => {
+      void sendMessage(topic, "deep");
+    }, 0);
+  };
+
   return (
     <div className="flex h-screen bg-[#f7f3eb] text-slate-800">
       {/* Sidebar */}
       <div
-        className={`flex flex-col border-r border-[#e6dfd2] bg-[#efe8da] p-4 transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          hasStarted ? "w-56 opacity-100" : "w-0 overflow-hidden opacity-0 p-0"
+        className={`flex flex-col border-r border-[#e6dfd2] bg-[#efe8da] transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          hasStarted ? "w-56 opacity-100 p-4" : "w-0 overflow-hidden opacity-0 p-0"
         }`}
       >
+        {/* New Chat */}
         <button
-          onClick={createNewChat}
+          onClick={() => { createNewChat(); setSidebarView("chat"); }}
           className="mb-4 whitespace-nowrap rounded-xl border border-[#d7cdb8] bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-[#f8f4ea]"
         >
           + New Chat
         </button>
 
-        <div className="flex-1 space-y-2 overflow-y-auto">
+        {/* Chat list */}
+        <div className="flex-1 space-y-1 overflow-y-auto">
           {chats.map((chat, index) => (
             <div
               key={chat.id}
-              onClick={() => setCurrentChatIndex(index)}
-              className={`cursor-pointer whitespace-nowrap rounded-lg p-2 text-sm transition ${
-                index === currentChatIndex
+              onClick={() => { setCurrentChatIndex(index); setSidebarView("chat"); }}
+              className={`cursor-pointer whitespace-nowrap rounded-lg px-2 py-1.5 text-sm transition ${
+                sidebarView === "chat" && index === currentChatIndex
                   ? "border border-[#d7cdb8] bg-white text-slate-900"
                   : "text-slate-600 hover:bg-[#f7f0e2]"
               }`}
@@ -445,10 +574,38 @@ export default function Home() {
             </div>
           ))}
         </div>
+
+        {/* Bottom nav */}
+        <div className="mt-4 space-y-1 border-t border-[#ddd4c0] pt-4">
+          {([
+            { view: "lamp" as SidebarView, label: "🪔 Rub The Lamp", highlight: true },
+            { view: "artifacts" as SidebarView, label: "🗂 Artifacts", highlight: false },
+            { view: "projects" as SidebarView, label: "📁 Projects", highlight: false },
+          ]).map(({ view, label, highlight }) => (
+            <button
+              key={view}
+              onClick={() => setSidebarView(view)}
+              className={`w-full whitespace-nowrap rounded-lg px-2 py-2 text-left text-sm font-medium transition ${
+                sidebarView === view
+                  ? "border border-[#d7cdb8] bg-white text-slate-900"
+                  : highlight
+                  ? "text-[#7b5e2a] hover:bg-[#f0e8d5]"
+                  : "text-slate-500 hover:bg-[#f0ebe0]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Main area */}
       <div className="relative flex flex-1 overflow-hidden">
+        {sidebarView === "artifacts" && <StubView title="Artifacts" icon="🗂" />}
+        {sidebarView === "projects" && <StubView title="Projects" icon="📁" />}
+        {sidebarView === "lamp" && <LampView onResearch={handleLampResearch} />}
+        {sidebarView === "chat" && (
+          <>
         {/* Genie title */}
         <div
           className={`font-genie absolute left-1/2 -translate-x-1/2 text-center leading-none tracking-wide text-slate-700 transition-all duration-[1100ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
@@ -508,6 +665,8 @@ export default function Home() {
             </button>
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );
