@@ -335,7 +335,9 @@ function LampView({
       setTopicsLoading(true);
       setTopicsError(false);
       try {
-        const r = await fetch("http://127.0.0.1:8000/lamp/topics");
+        const r = await fetch(`http://127.0.0.1:8000/lamp/topics?t=${Date.now()}`, {
+          cache: "no-store",
+        });
         if (!r.ok) {
           throw new Error(`lamp/topics failed: ${r.status}`);
         }

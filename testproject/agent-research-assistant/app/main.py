@@ -2,7 +2,7 @@ import json
 import random
 import time
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -194,17 +194,23 @@ def chat_stream(query: Query):
 # ── Lamp topics ───────────────────────────────────────────────────────────────
 
 @app.get("/lamp/topics")
-def lamp_topics():
+def lamp_topics(response: Response):
     """Return 8 current-event topic suggestions using Tavily web search."""
     from langchain_tavily import TavilySearch  # noqa: PLC0415
+
+    # Avoid intermediary/browser caching so each open can get a fresh randomized subset.
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
 
     now = time.time()
     cached_topics = _LAMP_TOPICS_CACHE.get("topics", [])
     cached_ts = float(_LAMP_TOPICS_CACHE.get("ts", 0.0))
     if isinstance(cached_topics, list) and cached_topics and (now - cached_ts) < _LAMP_TOPICS_TTL_SECONDS:
         topics = [t for t in cached_topics if isinstance(t, str) and t.strip()]
-        random.shuffle(topics)
-        return {"topics": topics[:_LAMP_TOPICS_RETURN_COUNT], "cached": True}
+        k = min(_LAMP_TOPICS_RETURN_COUNT, len(topics))
+        sampled = random.sample(topics, k=k)
+        return {"topics": sampled, "cached": True}
 
     searcher = TavilySearch(
         max_results=10,
@@ -225,10 +231,11 @@ def lamp_topics():
                 if title and len(title) < 120:
                     topics.append(title.strip())
         deduped = list(dict.fromkeys(topics))
-        random.shuffle(deduped)
         _LAMP_TOPICS_CACHE["topics"] = deduped
         _LAMP_TOPICS_CACHE["ts"] = now
-        return {"topics": deduped[:_LAMP_TOPICS_RETURN_COUNT], "cached": False}
+        k = min(_LAMP_TOPICS_RETURN_COUNT, len(deduped))
+        sampled = random.sample(deduped, k=k) if k > 0 else []
+        return {"topics": sampled, "cached": False}
     except Exception as exc:  # noqa: BLE001
         return {"topics": [], "error": str(exc)}
 
