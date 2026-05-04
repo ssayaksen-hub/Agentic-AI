@@ -567,12 +567,12 @@ export default function Home() {
         }`}
       >
         {/* New Chat */}
-        <button
+        <div
           onClick={() => { createNewChat(); setSidebarView("chat"); }}
-          className="mb-3 whitespace-nowrap rounded-xl border border-[#d7cdb8] bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-[#f8f4ea]"
+          className="mb-3 cursor-pointer whitespace-nowrap rounded-lg px-2 py-1.5 text-sm font-medium text-slate-600 transition hover:text-slate-900"
         >
           + New Chat
-        </button>
+        </div>
 
         {/* Nav items — shown directly under New Chat */}
         <div className="mb-3 space-y-0.5 border-b border-[#ddd4c0] pb-3">
