@@ -287,9 +287,35 @@ function ThinkingCloud({ steps }: { steps: string[] }) {
   );
 }
 
+function GenieLampIcon({ className = "h-5 w-8" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 40" className={className} xmlns="http://www.w3.org/2000/svg" fill="none">
+      <ellipse cx="28" cy="28" rx="20" ry="8" fill="#c8a96e" opacity="0.3" />
+      <path d="M10 26 Q8 18 16 14 Q24 10 34 16 Q42 20 44 26 Z" fill="#d4a843" />
+      <path d="M44 22 Q52 18 58 20 Q54 26 44 26 Z" fill="#c8953a" />
+      <path
+        d="M10 24 Q2 20 4 14 Q6 8 12 12"
+        stroke="#c8953a"
+        strokeWidth="2.5"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path d="M22 14 Q28 8 34 14" stroke="#b8842a" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d="M28 10 Q32 4 28 0" stroke="#b0a080" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.5" />
+      <path d="M28 10 Q24 5 28 1" stroke="#b0a080" strokeWidth="1" fill="none" strokeLinecap="round" opacity="0.3" />
+    </svg>
+  );
+}
+
 // ── Lamp view ────────────────────────────────────────────────────────────────
 
-function LampView({ onResearch }: { onResearch: (topic: string) => void }) {
+function LampView({
+  onResearch,
+  onSwitchToChat,
+}: {
+  onResearch: (topic: string) => void;
+  onSwitchToChat: () => void;
+}) {
   const [topics, setTopics] = useState<string[]>([]);
   const [topicsLoading, setTopicsLoading] = useState(true);
   const [topicsError, setTopicsError] = useState(false);
@@ -317,25 +343,18 @@ function LampView({ onResearch }: { onResearch: (topic: string) => void }) {
       {/* Header */}
       <div className="text-center">
         <div className="font-genie mb-1 flex items-center justify-center gap-3 text-4xl text-slate-700">
-          <svg viewBox="0 0 64 40" className="h-12 w-20" xmlns="http://www.w3.org/2000/svg" fill="none">
-            {/* Lamp body */}
-            <ellipse cx="28" cy="28" rx="20" ry="8" fill="#c8a96e" opacity="0.3"/>
-            <path d="M10 26 Q8 18 16 14 Q24 10 34 16 Q42 20 44 26 Z" fill="#d4a843"/>
-            {/* Spout */}
-            <path d="M44 22 Q52 18 58 20 Q54 26 44 26 Z" fill="#c8953a"/>
-            {/* Handle */}
-            <path d="M10 24 Q2 20 4 14 Q6 8 12 12" stroke="#c8953a" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-            {/* Lid */}
-            <path d="M22 14 Q28 8 34 14" stroke="#b8842a" strokeWidth="2" fill="none" strokeLinecap="round"/>
-            {/* Smoke/genie wisps */}
-            <path d="M28 10 Q32 4 28 0" stroke="#b0a080" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.5"/>
-            <path d="M28 10 Q24 5 28 1" stroke="#b0a080" strokeWidth="1" fill="none" strokeLinecap="round" opacity="0.3"/>
-          </svg>
+          <GenieLampIcon className="h-14 w-24" />
           Rub The Lamp
         </div>
         <p className="text-sm text-slate-400">
           Pick a current topic for a deep-dive investigation, or type your own.
         </p>
+        <div
+          onClick={onSwitchToChat}
+          className="mt-2 cursor-pointer text-xs font-medium text-slate-500 transition hover:text-slate-700"
+        >
+          Switch to normal chat mode
+        </div>
       </div>
 
       {/* Topic chips */}
@@ -577,13 +596,7 @@ export default function Home() {
         {/* Nav items — shown directly under New Chat */}
         <div className="mb-3 space-y-0.5 border-b border-[#ddd4c0] pb-3">
           {([
-            { view: "lamp" as SidebarView, label: "Rub The Lamp", icon: (
-              <svg viewBox="0 0 24 24" className="h-4 w-4 flex-shrink-0 fill-current" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19.5 10c-1.1 0-2.1.4-2.9 1L14 8.4V7a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v1.4L4.4 11A4.5 4.5 0 1 0 8 18.9V20h8v-1.1A4.5 4.5 0 0 0 19.5 10zM6 18a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm13.5 0a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>
-                <path d="M9 7h6v1H9z"/>
-                <path d="M11 2h2v3h-2z" opacity=".6"/>
-              </svg>
-            ), highlight: true },
+            { view: "lamp" as SidebarView, label: "Rub The Lamp", icon: <GenieLampIcon className="h-6 w-10 flex-shrink-0" />, highlight: true },
             { view: "artifacts" as SidebarView, label: "Artifacts", icon: (
               <svg viewBox="0 0 24 24" className="h-4 w-4 flex-shrink-0 fill-current opacity-60" xmlns="http://www.w3.org/2000/svg">
                 <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h10v2H4z"/>
@@ -639,7 +652,7 @@ export default function Home() {
       <div className="relative flex flex-1 overflow-hidden">
         {sidebarView === "artifacts" && <StubView title="Artifacts" icon="🗂" />}
         {sidebarView === "projects" && <StubView title="Projects" icon="📁" />}
-        {sidebarView === "lamp" && <LampView onResearch={handleLampResearch} />}
+        {sidebarView === "lamp" && <LampView onResearch={handleLampResearch} onSwitchToChat={() => setSidebarView("chat")} />}
         {sidebarView === "chat" && (
           <>
         {/* Genie title */}
@@ -679,26 +692,41 @@ export default function Home() {
             hasStarted ? "bottom-7" : "top-1/2 translate-y-6"
           }`}
         >
-          <div className="mx-auto flex w-full max-w-5xl items-end gap-3 rounded-2xl border border-[#d6ccb8] bg-white px-3 py-3 shadow-sm">
-            <textarea
-              className="min-h-[64px] flex-1 resize-y rounded-xl px-3 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask the void..."
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  void sendMessage();
-                }
-              }}
-            />
-            <button
-              onClick={() => void sendMessage()}
-              disabled={loading}
-              className="rounded-xl bg-[#d9c29d] px-5 py-2.5 font-medium text-slate-900 transition hover:bg-[#ccb089] disabled:cursor-not-allowed disabled:bg-[#d8cfbf]"
-            >
-              Probe
-            </button>
+          <div className="mx-auto w-full max-w-5xl">
+            <div className="flex items-end gap-3 rounded-2xl border border-[#d6ccb8] bg-white px-3 py-3 shadow-sm">
+              <textarea
+                className="min-h-[64px] flex-1 resize-y rounded-xl px-3 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask the void..."
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void sendMessage();
+                  }
+                }}
+              />
+              <button
+                onClick={() => void sendMessage()}
+                disabled={loading}
+                className="rounded-xl bg-[#d9c29d] px-5 py-2.5 font-medium text-slate-900 transition hover:bg-[#ccb089] disabled:cursor-not-allowed disabled:bg-[#d8cfbf]"
+              >
+                Probe
+              </button>
+            </div>
+
+            {!hasStarted && (
+              <div className="mt-3 flex items-center justify-center">
+                <div
+                  onClick={() => setSidebarView("lamp")}
+                  className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#7b5e2a] transition hover:text-[#5a4020]"
+                >
+                  <GenieLampIcon className="h-7 w-12" />
+                  <span>Rub The Lamp</span>
+                  <span className="text-xs font-normal text-[#9b8967]">(for deep research topics)</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
           </>
