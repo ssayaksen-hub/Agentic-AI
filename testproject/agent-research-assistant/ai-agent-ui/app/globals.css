@@ -24,3 +24,13 @@ body {
   font-family: var(--font-genie-display), serif;
   letter-spacing: 0.04em;
 }
+
+/* Floating cloud animation */
+@keyframes floatCloud {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+.cloud-float {
+  animation: floatCloud 3s ease-in-out infinite;
+}
