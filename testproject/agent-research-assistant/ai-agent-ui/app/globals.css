@@ -19,3 +19,8 @@ body {
 ::-webkit-scrollbar-track {
   background: #f3ecdf;
 }
+
+.font-genie {
+  font-family: var(--font-genie-display), serif;
+  letter-spacing: 0.04em;
+}

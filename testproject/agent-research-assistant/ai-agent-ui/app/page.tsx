@@ -95,8 +95,8 @@ export default function Home() {
       </div>
 
       <div className="flex flex-1 flex-col">
-        <div className="border-b border-[#e6dfd2] bg-[#f7f3eb] p-4 text-sm font-medium text-slate-600">
-          AI Assistant
+        <div className="font-genie border-b border-[#e6dfd2] bg-[#f7f3eb] p-4 text-center text-3xl font-semibold tracking-wide text-slate-700">
+          Genie
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto bg-[#f9f6ef] p-6">
