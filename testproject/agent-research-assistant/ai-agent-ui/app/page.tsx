@@ -32,6 +32,10 @@ function randomizeTopics(topics: string[], count = 5): string[] {
   return arr.slice(0, Math.min(count, arr.length));
 }
 
+function topicsSignature(topics: string[]): string {
+  return topics.join("||");
+}
+
 // ── Inline markdown renderer ─────────────────────────────────────────────────
 
 function renderInline(text: string): React.ReactNode[] {
@@ -386,6 +390,20 @@ function LampView({
   const [topicsLoading, setTopicsLoading] = useState(true);
   const [topicsError, setTopicsError] = useState(false);
   const [customTopic, setCustomTopic] = useState("");
+  const lastTopicsSigRef = useRef<string>("");
+
+  const applyRandomizedTopics = (sourceTopics: string[]) => {
+    let nextTopics = randomizeTopics(sourceTopics, 5);
+    const nextSig = topicsSignature(nextTopics);
+    if (nextSig === lastTopicsSigRef.current && nextTopics.length > 1) {
+      const [first, ...rest] = nextTopics;
+      if (first) {
+        nextTopics = [...rest, first];
+      }
+    }
+    lastTopicsSigRef.current = topicsSignature(nextTopics);
+    setTopics(nextTopics);
+  };
 
   useEffect(() => {
     const fetchTopics = async () => {
@@ -401,15 +419,15 @@ function LampView({
         const data = (await r.json()) as { topics?: string[]; error?: string };
         const fetched = Array.isArray(data.topics) ? data.topics : [];
         if (fetched.length > 0) {
-          setTopics(randomizeTopics(fetched, 5));
+          applyRandomizedTopics(fetched);
         } else {
-          setTopics(randomizeTopics(DEFAULT_LAMP_TOPICS, 5));
+          applyRandomizedTopics(DEFAULT_LAMP_TOPICS);
           if (data.error) {
             setTopicsError(true);
           }
         }
       } catch {
-        setTopics(randomizeTopics(DEFAULT_LAMP_TOPICS, 5));
+        applyRandomizedTopics(DEFAULT_LAMP_TOPICS);
         setTopicsError(true);
       } finally {
         setTopicsLoading(false);
@@ -456,6 +474,14 @@ function LampView({
             <p className="mb-3 text-center text-xs font-medium uppercase tracking-widest text-[#b0a18a]">
               Trending Now
             </p>
+            <div className="mb-3 flex justify-center">
+              <button
+                onClick={() => applyRandomizedTopics(topics.length > 0 ? topics : DEFAULT_LAMP_TOPICS)}
+                className="rounded-full border border-[#d6ccb8] px-3 py-1 text-xs text-slate-500 transition hover:border-[#c4b08a] hover:text-slate-700"
+              >
+                Shuffle topics
+              </button>
+            </div>
             <div className="flex flex-wrap justify-center gap-2">
               {topics.map((topic, i) => (
                 <button
@@ -585,7 +611,7 @@ export default function Home() {
         ]);
 
         const controller = new AbortController();
-        const timeoutMs = 90000;
+        const timeoutMs = 30000;
         const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
         let deepRes: Response;
@@ -596,21 +622,37 @@ export default function Home() {
             body: JSON.stringify({ question, mode: "deep" }),
             signal: controller.signal,
           });
-        } catch (error) {
-          if (error instanceof DOMException && error.name === "AbortError") {
-            chat.messages.push({
-              role: "ai",
-              content:
-                "Deep research timed out. Try a narrower topic or run a normal chat query first, then refine.",
-            });
-          } else {
-            chat.messages.push({
-              role: "ai",
-              content: `Deep research request failed: ${error instanceof Error ? error.message : "unknown error"}`,
-            });
-          }
-          setChats([...updatedChats]);
+        } catch {
           clearTimeout(timeoutId);
+          setSteps(["Deep mode is slow right now", "Falling back to normal research"]);
+          try {
+            const fallbackRes = await fetch("http://127.0.0.1:8000/chat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ question, mode: "normal" }),
+            });
+            if (fallbackRes.ok) {
+              const fallbackData = (await fallbackRes.json()) as { answer?: string };
+              chat.messages.push({
+                role: "ai",
+                content:
+                  `Deep mode timed out, so I generated a quick response in normal mode.\n\n${fallbackData.answer?.trim() || "No answer received."}`,
+              });
+            } else {
+              const errText = await fallbackRes.text();
+              chat.messages.push({
+                role: "ai",
+                content: `Deep mode failed and fallback failed (${fallbackRes.status}): ${errText || "unknown error"}`,
+              });
+            }
+            setChats([...updatedChats]);
+          } catch (fallbackError) {
+            chat.messages.push({
+              role: "ai",
+              content: `Deep mode request failed: ${fallbackError instanceof Error ? fallbackError.message : "unknown error"}`,
+            });
+            setChats([...updatedChats]);
+          }
           return;
         }
         clearTimeout(timeoutId);
