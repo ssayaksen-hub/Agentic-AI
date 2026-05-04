@@ -325,6 +325,47 @@ function GenieLampIcon({ className = "h-5 w-8" }: { className?: string }) {
   );
 }
 
+function GenieThinkingLogo({ className = "h-12 w-14" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 80 80" className={className} xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
+      {/* Lamp */}
+      <ellipse cx="27" cy="61" rx="18" ry="7" fill="#c8a96e" opacity="0.25" />
+      <path d="M10 58 Q8 50 16 45 Q25 40 36 47 Q44 52 46 58 Z" fill="#d4a843" />
+      <path d="M46 54 Q55 50 62 52 Q58 58 46 58 Z" fill="#c8953a" />
+      <path d="M11 56 Q4 52 6 47 Q8 42 13 45" stroke="#c8953a" strokeWidth="2.5" strokeLinecap="round" />
+
+      {/* Genie body cloud */}
+      <path
+        d="M42 45 C34 42 30 35 33 29 C36 22 43 20 49 23 C52 18 58 17 62 21 C66 25 66 31 62 35 C65 41 61 46 55 47 C51 48 47 47 42 45 Z"
+        fill="#7f95ad"
+      />
+
+      {/* Genie head */}
+      <circle cx="50" cy="27" r="10" fill="#f0c9a4" />
+
+      {/* Glasses */}
+      <circle cx="46" cy="27" r="2.8" stroke="#334155" strokeWidth="1.6" />
+      <circle cx="54" cy="27" r="2.8" stroke="#334155" strokeWidth="1.6" />
+      <path d="M48.8 27 H51.2" stroke="#334155" strokeWidth="1.4" />
+
+      {/* Eyes and brow */}
+      <circle cx="46" cy="27" r="0.8" fill="#1f2937" />
+      <circle cx="54" cy="27" r="0.8" fill="#1f2937" />
+      <path d="M43 23.7 C44.7 22.8 47.4 22.8 49 23.6" stroke="#715547" strokeWidth="1" strokeLinecap="round" />
+      <path d="M51 23.6 C52.8 22.8 55.2 22.8 57 23.7" stroke="#715547" strokeWidth="1" strokeLinecap="round" />
+
+      {/* Thinking pose: hand on chin */}
+      <path d="M56 34 C57 36 56.4 39 53.8 40" stroke="#f0c9a4" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="53.2" cy="40.2" r="1.5" fill="#f0c9a4" />
+
+      {/* Thought bubbles */}
+      <circle cx="64" cy="15" r="2.3" fill="#c8d5e4" opacity="0.85" />
+      <circle cx="69" cy="10" r="1.6" fill="#c8d5e4" opacity="0.75" />
+      <circle cx="72" cy="6" r="1.1" fill="#c8d5e4" opacity="0.65" />
+    </svg>
+  );
+}
+
 // ── Lamp view ────────────────────────────────────────────────────────────────
 
 function LampView({
@@ -788,7 +829,10 @@ export default function Home() {
             hasStarted ? "top-4 text-5xl" : "top-1/2 -translate-y-24 text-8xl"
           }`}
         >
-          Genie
+          <div className="flex items-center justify-center gap-3">
+            <GenieThinkingLogo className={hasStarted ? "h-10 w-12" : "h-16 w-20"} />
+            <span>Genie</span>
+          </div>
         </div>
 
         {/* Messages */}
