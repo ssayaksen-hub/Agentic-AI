@@ -1,16 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Message = {
   role: "user" | "ai";
   content: string;
 };
 
+type Chat = {
+  id: number;
+  messages: Message[];
+};
+
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [chats, setChats] = useState<Chat[]>([{ id: 0, messages: [] }]);
+  const [currentChatIndex, setCurrentChatIndex] = useState<number | null>(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const messages = useMemo(
+    () => (currentChatIndex === null ? [] : (chats[currentChatIndex]?.messages ?? [])),
+    [chats, currentChatIndex],
+  );
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -18,12 +29,43 @@ export default function Home() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const createNewChat = () => {
+    const newChat: Chat = {
+      id: Date.now(),
+      messages: [],
+    };
+
+    setChats((prev) => [...prev, newChat]);
+    setCurrentChatIndex(chats.length);
+  };
+
+  const appendMessage = (message: Message) => {
+    setChats((prev) => {
+      const next = [...prev];
+      const activeIndex = currentChatIndex ?? 0;
+
+      if (!next[activeIndex]) {
+        next[activeIndex] = { id: Date.now(), messages: [] };
+      }
+
+      next[activeIndex] = {
+        ...next[activeIndex],
+        messages: [...next[activeIndex].messages, message],
+      };
+      return next;
+    });
+
+    if (currentChatIndex === null) {
+      setCurrentChatIndex(0);
+    }
+  };
+
   const sendMessage = async () => {
     const question = input.trim();
     if (!question || loading) return;
 
     const userMessage: Message = { role: "user", content: question };
-    setMessages((prev) => [...prev, userMessage]);
+    appendMessage(userMessage);
     setInput("");
     setLoading(true);
 
@@ -45,15 +87,12 @@ export default function Home() {
         role: "ai",
         content: typeof data.answer === "string" ? data.answer : "No answer received.",
       };
-      setMessages((prev) => [...prev, aiMessage]);
+      appendMessage(aiMessage);
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          content: "I could not reach the backend. Make sure FastAPI is running on 127.0.0.1:8000.",
-        },
-      ]);
+      appendMessage({
+        role: "ai",
+        content: "I could not reach the backend. Make sure FastAPI is running on 127.0.0.1:8000.",
+      });
     } finally {
       setLoading(false);
     }
@@ -64,7 +103,15 @@ export default function Home() {
       <div className="mx-auto flex h-screen w-full max-w-4xl flex-col px-3 py-4 sm:px-6 sm:py-6">
         <header className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Assistant</p>
-          <h1 className="mt-1 text-xl font-semibold text-slate-900">AI Research Assistant</h1>
+          <div className="mt-1 flex items-center justify-between gap-3">
+            <h1 className="text-xl font-semibold text-slate-900">AI Research Assistant</h1>
+            <button
+              onClick={createNewChat}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+            >
+              New chat
+            </button>
+          </div>
           <p className="mt-2 text-sm text-slate-600">Summarize indexed PDFs or ask a research question.</p>
         </header>
 
