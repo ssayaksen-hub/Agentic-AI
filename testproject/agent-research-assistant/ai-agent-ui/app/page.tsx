@@ -23,6 +23,15 @@ const DEFAULT_LAMP_TOPICS = [
   "Water security and climate adaptation",
 ];
 
+function randomizeTopics(topics: string[], count = 5): string[] {
+  const arr = [...topics];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, Math.min(count, arr.length));
+}
+
 // ── Inline markdown renderer ─────────────────────────────────────────────────
 
 function renderInline(text: string): React.ReactNode[] {
@@ -344,15 +353,15 @@ function LampView({
         const data = (await r.json()) as { topics?: string[]; error?: string };
         const fetched = Array.isArray(data.topics) ? data.topics : [];
         if (fetched.length > 0) {
-          setTopics(fetched);
+          setTopics(randomizeTopics(fetched, 5));
         } else {
-          setTopics(DEFAULT_LAMP_TOPICS);
+          setTopics(randomizeTopics(DEFAULT_LAMP_TOPICS, 5));
           if (data.error) {
             setTopicsError(true);
           }
         }
       } catch {
-        setTopics(DEFAULT_LAMP_TOPICS);
+        setTopics(randomizeTopics(DEFAULT_LAMP_TOPICS, 5));
         setTopicsError(true);
       } finally {
         setTopicsLoading(false);
@@ -469,6 +478,7 @@ export default function Home() {
   const [loadingChatId, setLoadingChatId] = useState<number | null>(null);
   const [steps, setSteps] = useState<string[]>([]);
   const [sidebarView, setSidebarView] = useState<SidebarView>("chat");
+  const [lampRefreshKey, setLampRefreshKey] = useState(0);
 
   const selectedChat = currentChatIndex === null ? null : (chats[currentChatIndex] ?? null);
 
@@ -526,11 +536,36 @@ export default function Home() {
           "Synthesizing findings",
         ]);
 
-        const deepRes = await fetch("http://127.0.0.1:8000/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question, mode: "deep" }),
-        });
+        const controller = new AbortController();
+        const timeoutMs = 90000;
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+        let deepRes: Response;
+        try {
+          deepRes = await fetch("http://127.0.0.1:8000/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question, mode: "deep" }),
+            signal: controller.signal,
+          });
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "AbortError") {
+            chat.messages.push({
+              role: "ai",
+              content:
+                "Deep research timed out. Try a narrower topic or run a normal chat query first, then refine.",
+            });
+          } else {
+            chat.messages.push({
+              role: "ai",
+              content: `Deep research request failed: ${error instanceof Error ? error.message : "unknown error"}`,
+            });
+          }
+          setChats([...updatedChats]);
+          clearTimeout(timeoutId);
+          return;
+        }
+        clearTimeout(timeoutId);
 
         if (!deepRes.ok) {
           const errText = await deepRes.text();
@@ -681,7 +716,12 @@ export default function Home() {
           ] as { view: SidebarView; label: string; icon: React.ReactNode; highlight: boolean }[]).map(({ view, label, icon, highlight }) => (
             <div
               key={view}
-              onClick={() => setSidebarView(view)}
+              onClick={() => {
+                if (view === "lamp") {
+                  setLampRefreshKey((k) => k + 1);
+                }
+                setSidebarView(view);
+              }}
               className={`flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg px-2 py-1.5 text-sm transition ${
                 sidebarView === view
                   ? "font-medium text-slate-900"
@@ -733,7 +773,13 @@ export default function Home() {
       <div className="relative flex flex-1 overflow-hidden">
         {sidebarView === "artifacts" && <StubView title="Artifacts" icon="🗂" />}
         {sidebarView === "projects" && <StubView title="Projects" icon="📁" />}
-        {sidebarView === "lamp" && <LampView onResearch={handleLampResearch} onSwitchToChat={() => setSidebarView("chat")} />}
+        {sidebarView === "lamp" && (
+          <LampView
+            key={lampRefreshKey}
+            onResearch={handleLampResearch}
+            onSwitchToChat={() => setSidebarView("chat")}
+          />
+        )}
         {sidebarView === "chat" && (
           <>
         {/* Genie title */}
@@ -799,7 +845,10 @@ export default function Home() {
             {!hasStarted && (
               <div className="mt-3 flex items-center justify-center">
                 <div
-                  onClick={() => setSidebarView("lamp")}
+                  onClick={() => {
+                    setLampRefreshKey((k) => k + 1);
+                    setSidebarView("lamp");
+                  }}
                   className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#7b5e2a] transition hover:text-[#5a4020]"
                 >
                   <GenieLampIcon className="h-7 w-12" />
