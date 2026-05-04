@@ -13,6 +13,9 @@ type Chat = {
   id: number;
   messages: Message[];
   mode?: "normal" | "deep";
+  title?: string;
+  pinned?: boolean;
+  inProject?: boolean;
 };
 
 const DEFAULT_LAMP_TOPICS = [
@@ -329,54 +332,113 @@ function GenieLampIcon({ className = "h-5 w-8" }: { className?: string }) {
   );
 }
 
-function GenieThinkingLogo({ className = "h-16 w-20" }: { className?: string }) {
+function GenieThinkingLogo({ className = "h-16 w-10" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 96 96" className={className} xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 80 108" className={className} xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
       <defs>
-        <linearGradient id="genieBody" x1="32" y1="26" x2="72" y2="76" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#8da5bd" />
-          <stop offset="1" stopColor="#5e7690" />
+        <linearGradient id="glBlue" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#7ab8e8" />
+          <stop offset="100%" stopColor="#3a7ac0" />
         </linearGradient>
-        <linearGradient id="lampBody" x1="14" y1="58" x2="70" y2="76" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#e2b65f" />
-          <stop offset="1" stopColor="#b67e24" />
+        <linearGradient id="glVest" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#2d3a52" />
+          <stop offset="100%" stopColor="#1a2438" />
         </linearGradient>
       </defs>
 
-      {/* Lamp */}
-      <ellipse cx="36" cy="78" rx="27" ry="8" fill="#8f6b31" opacity="0.18" />
-      <path d="M14 71 C12 59 25 52 41 54 C55 56 63 63 65 71 Z" fill="url(#lampBody)" stroke="#8f5c17" strokeWidth="2.2" />
-      <path d="M65 66 C75 60 85 62 90 66 C85 74 75 75 65 72 Z" fill="#bf8328" stroke="#8f5c17" strokeWidth="1.8" />
-      <path d="M15 69 C6 64 8 56 14 56" stroke="#8f5c17" strokeWidth="3.2" strokeLinecap="round" />
-      <path d="M33 53 C39 47 47 47 53 53" stroke="#8f5c17" strokeWidth="2.6" strokeLinecap="round" />
+      {/* ══ GRADUATION CAP ══ */}
+      {/* Mortarboard flat board – perspective diamond */}
+      <path d="M10 17 L40 6 L70 17 L40 28 Z" fill="#1a1a1a" />
+      {/* Board underside/shadow edge */}
+      <path d="M10 17 L10 21 L40 32 L70 21 L70 17" fill="#0d0d0d" />
+      {/* Cylinder base of cap */}
+      <rect x="29" y="24" width="22" height="10" rx="1" fill="#1a1a1a" />
+      <ellipse cx="40" cy="24" rx="11" ry="3" fill="#252525" />
+      <ellipse cx="40" cy="34" rx="11" ry="3" fill="#111" />
+      {/* Tassel string from left corner of board */}
+      <path d="M10 17 C8 20 8 25 9 31 C10 35 10 38 10 42" fill="none" stroke="#d4a820" strokeWidth="1.4" strokeLinecap="round" />
+      {/* Tassel bundle */}
+      <ellipse cx="10" cy="44" rx="3" ry="2.5" fill="#d4a820" />
+      {/* Tassel fringe */}
+      <line x1="7" y1="46" x2="5" y2="54" stroke="#c89018" strokeWidth="1.2" />
+      <line x1="9" y1="46" x2="8" y2="55" stroke="#c89018" strokeWidth="1.2" />
+      <line x1="11" y1="46" x2="11" y2="55" stroke="#c89018" strokeWidth="1.2" />
+      <line x1="13" y1="46" x2="14" y2="54" stroke="#c89018" strokeWidth="1.2" />
 
-      {/* Genie near spout */}
-      <path d="M60 57 C53 53 49 46 51 40 C53 33 60 30 67 33 C70 28 77 27 82 31 C87 35 87 43 82 47 C84 53 80 58 73 59 C68 60 64 59 60 57 Z" fill="url(#genieBody)" />
-      <path d="M61 57 C57 64 52 68 46 70" stroke="#6f87a0" strokeWidth="2" strokeLinecap="round" />
+      {/* ══ HEAD ══ */}
+      <circle cx="40" cy="48" r="18" fill="url(#glBlue)" />
+      {/* Left ear + gold earring */}
+      <ellipse cx="22" cy="49" rx="2.5" ry="3.5" fill="#4a88c8" />
+      <circle cx="22" cy="52" r="2.2" stroke="#e8b020" strokeWidth="1.6" fill="none" />
+      {/* Right ear */}
+      <ellipse cx="58" cy="49" rx="2.5" ry="3.5" fill="#4a88c8" />
+      {/* Chin hint */}
+      <path d="M33 65 C36 68 44 68 47 65" fill="none" stroke="#3a70b8" strokeWidth="1" opacity="0.5" />
 
-      {/* Head */}
-      <circle cx="70" cy="37" r="10" fill="#efc6a4" />
-      <path d="M61 36 C61 31 65 28 70 28 C75 28 79 31 79 36" fill="#5b6e84" />
+      {/* Eyebrows – left flat, right raised (thinking) */}
+      <path d="M26 37 C28 35 34 35 36 37" fill="none" stroke="#4a2808" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M43 35 C46 32 52 32 54 34" fill="none" stroke="#4a2808" strokeWidth="1.9" strokeLinecap="round" />
 
-      {/* Glasses */}
-      <circle cx="66" cy="38" r="3" stroke="#1f2937" strokeWidth="1.7" />
-      <circle cx="74" cy="38" r="3" stroke="#1f2937" strokeWidth="1.7" />
-      <path d="M69 38 H71" stroke="#1f2937" strokeWidth="1.4" />
+      {/* ══ GLASSES – thick dark rectangular frames ══ */}
+      <rect x="22" y="40" width="15" height="11" rx="3" fill="white" fillOpacity="0.08" stroke="#111" strokeWidth="2.4" />
+      <rect x="41" y="40" width="15" height="11" rx="3" fill="white" fillOpacity="0.08" stroke="#111" strokeWidth="2.4" />
+      {/* Bridge */}
+      <line x1="37" y1="45.5" x2="41" y2="45.5" stroke="#111" strokeWidth="2.2" />
+      {/* Temple arms */}
+      <path d="M22 45 C19 45 18 46 17 47" stroke="#111" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+      <path d="M56 45 C59 45 60 46 61 47" stroke="#111" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+      {/* Eyes */}
+      <circle cx="29.5" cy="45.5" r="2.8" fill="#3a2808" />
+      <circle cx="48.5" cy="45.5" r="2.8" fill="#3a2808" />
+      <circle cx="30.5" cy="44.5" r="1" fill="white" />
+      <circle cx="49.5" cy="44.5" r="1" fill="white" />
 
-      {/* Face */}
-      <circle cx="66" cy="38" r="0.8" fill="#111827" />
-      <circle cx="74" cy="38" r="0.8" fill="#111827" />
-      <path d="M70 41 C69.3 42 69.7 43 70.6 43" stroke="#9c6c53" strokeWidth="1" strokeLinecap="round" />
-      <path d="M67 45 C69 46 71 46 73 45" stroke="#9c6c53" strokeWidth="1.2" strokeLinecap="round" />
+      {/* Nose */}
+      <path d="M38 53 C37 56 39 57.5 41 56.5" fill="none" stroke="#3060a8" strokeWidth="1.3" strokeLinecap="round" />
+      {/* Smirk */}
+      <path d="M32 61 C36 64 45 63 48 61" fill="none" stroke="#2050a0" strokeWidth="1.6" strokeLinecap="round" />
 
-      {/* Thinking pose hand */}
-      <path d="M76 46 C79 49 78 53 74 55" stroke="#efc6a4" strokeWidth="3" strokeLinecap="round" />
-      <circle cx="73.2" cy="55" r="1.5" fill="#efc6a4" />
+      {/* ══ NECK ══ */}
+      <rect x="37" y="66" width="6" height="8" rx="2" fill="#5b9bd5" />
 
-      {/* Thought bubbles */}
-      <circle cx="84" cy="24" r="2.5" fill="#c9d8e7" opacity="0.9" />
-      <circle cx="89" cy="19" r="1.7" fill="#c9d8e7" opacity="0.75" />
-      <circle cx="92" cy="14" r="1.1" fill="#c9d8e7" opacity="0.65" />
+      {/* ══ BODY ══ */}
+      {/* White shirt */}
+      <path d="M16 84 C14 74 18 66 26 64 L54 64 C62 66 66 74 64 84 C62 94 56 100 50 102 C45 104 35 104 30 102 C24 100 18 94 16 84 Z" fill="white" />
+      {/* Dark vest – V-neck */}
+      <path d="M26 64 C24 70 22 78 22 86 L58 86 C58 78 56 70 54 64 Z" fill="url(#glVest)" />
+      {/* V-neck shirt showing */}
+      <path d="M36 64 L40 78 L44 64" fill="white" />
+      {/* Red tie */}
+      <path d="M38 64 L40 76 L42 64 Z" fill="#b81818" />
+      <path d="M39 63 L40 65 L41 63 Z" fill="#901010" />
+      {/* Pocket right chest */}
+      <rect x="47" y="70" width="8" height="7" rx="1" fill="#1a2438" />
+      {/* Pencils */}
+      <line x1="49" y1="70" x2="49" y2="65" stroke="#e83020" strokeWidth="1.4" />
+      <line x1="51" y1="70" x2="51" y2="64" stroke="#2040d0" strokeWidth="1.4" />
+      <line x1="53" y1="70" x2="53" y2="65" stroke="#20a020" strokeWidth="1.4" />
+
+      {/* ══ LEFT ARM – holding book ══ */}
+      <path d="M22 70 C15 74 12 80 13 88" fill="none" stroke="#5b9bd5" strokeWidth="9" strokeLinecap="round" />
+      <path d="M13 88 C17 90 24 92 34 92" fill="none" stroke="#5b9bd5" strokeWidth="8.5" strokeLinecap="round" />
+      {/* Cuff */}
+      <ellipse cx="13" cy="88" rx="5" ry="4" fill="white" stroke="#dde5ee" strokeWidth="0.6" />
+      <circle cx="13" cy="88" r="1.2" fill="#d8e0ea" />
+      {/* Book */}
+      <rect x="25" y="89" width="22" height="16" rx="2" fill="#1a4a28" stroke="#0e3018" strokeWidth="1.2" />
+      <line x1="27" y1="91" x2="27" y2="103" stroke="#2a6a38" strokeWidth="1" />
+      <rect x="25" y="94" width="22" height="4" rx="0.5" fill="none" stroke="#d4a820" strokeWidth="0.8" opacity="0.8" />
+
+      {/* ══ RIGHT ARM – thinking pose, fist at chin ══ */}
+      <path d="M58 70 C65 74 68 80 66 86" fill="none" stroke="#5b9bd5" strokeWidth="9" strokeLinecap="round" />
+      <path d="M66 86 C63 82 56 75 50 70" fill="none" stroke="#5b9bd5" strokeWidth="8.5" strokeLinecap="round" />
+      {/* Cuff */}
+      <ellipse cx="66" cy="86" rx="5" ry="4" fill="white" stroke="#dde5ee" strokeWidth="0.6" />
+      <circle cx="66" cy="86" r="1.2" fill="#d8e0ea" />
+      {/* Fist under chin */}
+      <ellipse cx="50" cy="69" rx="5.5" ry="5" fill="#5b9bd5" stroke="#3a7ac0" strokeWidth="1.2" />
+      <path d="M46 67 C47 64 53 64 54 67" fill="none" stroke="#3a7ac0" strokeWidth="1" opacity="0.6" />
+
     </svg>
   );
 }
@@ -557,6 +619,7 @@ export default function Home() {
   const [steps, setSteps] = useState<string[]>([]);
   const [sidebarView, setSidebarView] = useState<SidebarView>("chat");
   const [lampRefreshKey, setLampRefreshKey] = useState(0);
+  const [openChatMenuId, setOpenChatMenuId] = useState<number | null>(null);
 
   const selectedChat = currentChatIndex === null ? null : (chats[currentChatIndex] ?? null);
 
@@ -564,6 +627,26 @@ export default function Home() {
     () => (currentChatIndex === null ? [] : (chats[currentChatIndex]?.messages ?? [])),
     [chats, currentChatIndex],
   );
+  // Load persisted chats after hydration (must run client-side only)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ai_chats");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (saved) setChats(JSON.parse(saved) as Chat[]);
+    } catch { /* ignore corrupt data */ }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("ai_chats", JSON.stringify(chats));
+  }, [chats]);
+
+  useEffect(() => {
+    if (chats.length > 0 && currentChatIndex === null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrentChatIndex(0);
+    }
+  }, [chats, currentChatIndex]);
+
   const hasStarted = chats.some((chat) => chat.messages.length > 0);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -574,8 +657,64 @@ export default function Home() {
 
   const createNewChat = () => {
     const newChat: Chat = { id: Date.now(), messages: [], mode: "normal" };
-    setChats((prev) => [...prev, newChat]);
-    setCurrentChatIndex(chats.length);
+    setChats((prev) => {
+      const updated = [...prev, newChat];
+      setCurrentChatIndex(updated.length - 1);
+      return updated;
+    });
+  };
+
+  const togglePinChat = (chatId: number) => {
+    setChats((prev) =>
+      prev.map((chat) =>
+        chat.id === chatId ? { ...chat, pinned: !chat.pinned } : chat,
+      ),
+    );
+  };
+
+  const addChatToProject = (chatId: number) => {
+    setChats((prev) =>
+      prev.map((chat) =>
+        chat.id === chatId ? { ...chat, inProject: true } : chat,
+      ),
+    );
+  };
+
+  const renameChat = (chatId: number) => {
+    const target = chats.find((chat) => chat.id === chatId);
+    if (!target) return;
+    const currentTitle = target.title ?? "";
+    const nextTitle = window.prompt("Rename chat", currentTitle)?.trim();
+    if (!nextTitle) return;
+
+    setChats((prev) =>
+      prev.map((chat) =>
+        chat.id === chatId ? { ...chat, title: nextTitle } : chat,
+      ),
+    );
+  };
+
+  const deleteChat = (chatId: number) => {
+    setChats((prev) => {
+      const deleteIndex = prev.findIndex((chat) => chat.id === chatId);
+      if (deleteIndex < 0) return prev;
+
+      let next = prev.filter((chat) => chat.id !== chatId);
+      if (next.length === 0) {
+        next = [{ id: Date.now(), messages: [], mode: "normal" }];
+      }
+
+      setCurrentChatIndex((prevIndex) => {
+        if (prevIndex === null) return 0;
+        if (prevIndex === deleteIndex) {
+          return Math.max(0, Math.min(deleteIndex, next.length - 1));
+        }
+        if (prevIndex > deleteIndex) return prevIndex - 1;
+        return prevIndex;
+      });
+
+      return next;
+    });
   };
 
   const sendMessage = async (
@@ -778,7 +917,10 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-[#f7f3eb] text-slate-800">
+    <div
+      className="flex h-screen bg-[#f7f3eb] text-slate-800"
+      onClick={() => setOpenChatMenuId(null)}
+    >
       {/* Sidebar */}
       <div
         className={`flex flex-col border-r border-[#e6dfd2] bg-[#efe8da] transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
@@ -835,15 +977,21 @@ export default function Home() {
           {chats
             .map((chat, index) => ({ chat, index }))
             .filter(({ chat }) => chat.messages.some((m) => m.role === "user"))
+            .sort((a, b) => Number(Boolean(b.chat.pinned)) - Number(Boolean(a.chat.pinned)))
             .map(({ chat, index }) => {
             const lastQuestion =
               [...chat.messages].reverse().find((m) => m.role === "user")?.content ?? `Chat ${index + 1}`;
-            const label = lastQuestion.length > 22 ? lastQuestion.slice(0, 22) + "…" : lastQuestion;
+            const baseLabel = chat.title?.trim() || lastQuestion;
+            const label = baseLabel.length > 22 ? baseLabel.slice(0, 22) + "…" : baseLabel;
             const isDeepChat = chat.mode === "deep";
             return (
               <div
                 key={chat.id}
-                onClick={() => { setCurrentChatIndex(index); setSidebarView("chat"); }}
+                onClick={() => {
+                  setCurrentChatIndex(index);
+                  setSidebarView("chat");
+                  setOpenChatMenuId(null);
+                }}
                 className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm transition ${
                   sidebarView === "chat" && index === currentChatIndex
                     ? "font-medium text-slate-900"
@@ -851,12 +999,76 @@ export default function Home() {
                 }`}
                 title={lastQuestion}
               >
-                <span className="truncate">{label}</span>
-                {isDeepChat && (
-                  <span className="rounded-full border border-[#d9c8a8] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#8b6a34]">
-                    Deep
-                  </span>
-                )}
+                <div className="flex min-w-0 items-center gap-1.5">
+                  {chat.pinned && <span className="text-xs text-[#8b6a34]">📌</span>}
+                  <span className="truncate">{label}</span>
+                  {chat.inProject && (
+                    <span className="rounded-full border border-[#c9d4be] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#4e6a3a]">
+                      Project
+                    </span>
+                  )}
+                  {isDeepChat && (
+                    <span className="rounded-full border border-[#d9c8a8] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#8b6a34]">
+                      Deep
+                    </span>
+                  )}
+                </div>
+
+                <div className="relative" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    aria-label="Chat options"
+                    onClick={() => setOpenChatMenuId((prev) => (prev === chat.id ? null : chat.id))}
+                    className="rounded px-1.5 py-0.5 text-slate-500 transition hover:bg-[#e5dccb] hover:text-slate-800"
+                  >
+                    ☰
+                  </button>
+
+                  {openChatMenuId === chat.id && (
+                    <div className="absolute right-0 top-7 z-20 w-36 rounded-md border border-[#d9cfbd] bg-[#fffdf8] py-1 shadow-lg">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          togglePinChat(chat.id);
+                          setOpenChatMenuId(null);
+                        }}
+                        className="block w-full px-3 py-1.5 text-left text-xs text-slate-700 transition hover:bg-[#f1eadc]"
+                      >
+                        {chat.pinned ? "Unpin" : "Pin"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          addChatToProject(chat.id);
+                          setOpenChatMenuId(null);
+                        }}
+                        className="block w-full px-3 py-1.5 text-left text-xs text-slate-700 transition hover:bg-[#f1eadc]"
+                      >
+                        Add to Project
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          renameChat(chat.id);
+                          setOpenChatMenuId(null);
+                        }}
+                        className="block w-full px-3 py-1.5 text-left text-xs text-slate-700 transition hover:bg-[#f1eadc]"
+                      >
+                        Rename
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          deleteChat(chat.id);
+                          setOpenChatMenuId(null);
+                        }}
+                        className="block w-full px-3 py-1.5 text-left text-xs text-[#9a3d2b] transition hover:bg-[#f6e6df]"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -879,18 +1091,18 @@ export default function Home() {
         {/* Genie title */}
         <div
           className={`font-genie absolute left-1/2 z-10 -translate-x-1/2 text-center leading-none tracking-wide text-slate-700 transition-all duration-[1100ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
-            hasStarted ? "top-4 text-5xl" : "top-1/2 -translate-y-32 text-7xl"
+            hasStarted ? "top-6 text-[6rem]" : "top-1/2 -translate-y-32 text-[9rem]"
           }`}
         >
-          <div className="flex items-center justify-center gap-3">
-            <GenieThinkingLogo className={hasStarted ? "h-10 w-12" : "h-14 w-16"} />
+          <div className="flex items-center justify-center gap-4">
+            <GenieThinkingLogo className={hasStarted ? "h-24 w-14" : "h-36 w-[86px]"} />
             <span>Genie</span>
           </div>
         </div>
 
         {/* Messages */}
         {hasStarted ? (
-          <div className="h-full w-full space-y-4 overflow-y-auto bg-[#f9f6ef] px-6 pt-28 pb-44">
+          <div className="h-full w-full space-y-4 overflow-y-auto bg-[#f9f6ef] px-6 pt-44 pb-44">
             {selectedChat &&
               selectedChat.messages.map((msg: Message, i: number) => (
                 <div
