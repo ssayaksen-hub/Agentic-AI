@@ -2,24 +2,20 @@
 
 /* Background */
 body {
-  background: #f7f7f8;
+  background: #f7f3eb;
   color: #0f172a;
 }
 
-/* Scrollbar (futuristic minimal) */
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #c8bea9;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.glow {
-  box-shadow: 0 0 15px rgba(139, 92, 246, 0.6);
+  background: #f3ecdf;
 }

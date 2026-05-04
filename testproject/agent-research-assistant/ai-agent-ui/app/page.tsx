@@ -68,13 +68,13 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen">
-      <div className="flex w-64 flex-col border-r border-white/10 bg-black/40 p-4 backdrop-blur-lg">
+    <div className="flex h-screen bg-[#f7f3eb] text-slate-800">
+      <div className="flex w-64 flex-col border-r border-[#e6dfd2] bg-[#efe8da] p-4">
         <button
           onClick={createNewChat}
-          className="mb-4 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 px-3 py-2"
+          className="mb-4 rounded-xl border border-[#d7cdb8] bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-[#f8f4ea]"
         >
-          New Chat
+          + New Chat
         </button>
 
         <div className="flex-1 space-y-2 overflow-y-auto">
@@ -82,8 +82,10 @@ export default function Home() {
             <div
               key={chat.id}
               onClick={() => setCurrentChatIndex(index)}
-              className={`cursor-pointer rounded-lg p-2 ${
-                index === currentChatIndex ? "bg-purple-600" : "bg-white/5 hover:bg-white/10"
+              className={`cursor-pointer rounded-lg p-2 text-sm transition ${
+                index === currentChatIndex
+                  ? "border border-[#d7cdb8] bg-white text-slate-900"
+                  : "text-slate-600 hover:bg-[#f7f0e2]"
               }`}
             >
               Chat {index + 1}
@@ -93,30 +95,32 @@ export default function Home() {
       </div>
 
       <div className="flex flex-1 flex-col">
-        <div className="border-b border-white/10 bg-white/5 p-4 backdrop-blur-lg">AI Assistant</div>
+        <div className="border-b border-[#e6dfd2] bg-[#f7f3eb] p-4 text-sm font-medium text-slate-600">
+          AI Assistant
+        </div>
 
-        <div className="flex-1 space-y-4 overflow-y-auto p-6">
+        <div className="flex-1 space-y-4 overflow-y-auto bg-[#f9f6ef] p-6">
           {currentChatIndex !== null &&
             chats[currentChatIndex].messages.map((msg: Message, i: number) => (
               <div
                 key={i}
-                className={`max-w-xl rounded-2xl px-5 py-3 shadow-lg ${
+                className={`max-w-2xl rounded-2xl px-5 py-3 text-[15px] leading-7 shadow-sm ${
                   msg.role === "user"
-                    ? "ml-auto bg-gradient-to-r from-purple-600 to-blue-500"
-                    : "mr-auto border border-white/10 bg-white/10"
+                    ? "ml-auto border border-[#ddd3be] bg-[#efe6d4] text-slate-900"
+                    : "mr-auto border border-[#e4ddce] bg-white text-slate-800"
                 }`}
               >
                 {msg.content}
               </div>
             ))}
 
-          {loading && <div className="animate-pulse text-purple-400">AI is thinking...</div>}
+          {loading && <div className="animate-pulse text-slate-500">AI is thinking...</div>}
           <div ref={bottomRef} />
         </div>
 
-        <div className="flex gap-3 border-t border-white/10 bg-black/30 p-4">
+        <div className="flex gap-3 border-t border-[#e6dfd2] bg-[#f7f3eb] p-4">
           <input
-            className="flex-1 rounded-xl border border-white/10 bg-black/40 px-4 py-2"
+            className="flex-1 rounded-xl border border-[#d6ccb8] bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-[#b8ab92] focus:outline-none"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask the void..."
@@ -126,7 +130,7 @@ export default function Home() {
           <button
             onClick={() => void sendMessage()}
             disabled={loading}
-            className="rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 px-4 py-2"
+            className="rounded-xl bg-[#2f2f2f] px-4 py-2 text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-slate-400"
           >
             Send
           </button>
