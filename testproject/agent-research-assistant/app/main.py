@@ -5,14 +5,19 @@ import re
 import shutil
 import time
 
-from fastapi import BackgroundTasks, FastAPI, File, Response, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from .agent import create_agent, thread_config
+from .agent import callback_handler, create_agent, thread_config
 from .prompts import DEEP_RESEARCH_PROMPT, SYSTEM_PROMPT
-from .tools import index_document, run_document_search
+from .tools import (
+    delete_document,
+    index_document,
+    run_document_search,
+    set_latest_uploaded_document,
+)
 
 app = FastAPI()
 
@@ -40,7 +45,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-agent = create_agent()
+agent, _ = create_agent()
 
 DOCUMENT_HINT_KEYWORDS = (
     "pdf",
@@ -97,11 +102,12 @@ def chat(query: Query):
 
     base_prompt = DEEP_RESEARCH_PROMPT if query.mode == "deep" else SYSTEM_PROMPT
     full_prompt = f"{base_prompt}\n\nQuestion: {query_for_agent}"
+    callback_handler.steps.clear()
     response = agent.invoke(
         {"messages": [{"role": "user", "content": full_prompt}]},
-        config=thread_config,
+        config={**thread_config, "callbacks": [callback_handler]},
     )
-    return {"answer": _extract_answer(response)}
+    return {"answer": _extract_answer(response), "steps": list(callback_handler.steps)}
 
 
 @app.post("/upload")
@@ -124,20 +130,32 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
         await file.close()
 
     rag_indexed = False
-    rag_message = "RAG indexing skipped (only PDFs are indexed)."
-    rag_indexing = "skipped"
-    if os.path.splitext(file_path)[1].lower() == ".pdf":
-        background_tasks.add_task(index_document, file_path)
-        rag_message = "RAG indexing queued in background for this PDF."
-        rag_indexing = "queued"
+    rag_message = "RAG indexing queued in background."
+    rag_indexing = "queued"
+    background_tasks.add_task(index_document, file_path)
+    set_latest_uploaded_document(os.path.basename(file_path))
 
     return {
         "message": "File uploaded successfully",
         "filename": os.path.basename(file_path),
+        "stored_filename": os.path.basename(file_path),
+        "original_filename": file.filename,
         "rag_indexed": rag_indexed,
         "rag_indexing": rag_indexing,
         "rag_message": rag_message,
     }
+
+
+@app.delete("/upload/{filename}")
+async def delete_uploaded_file(filename: str):
+    safe_name = _safe_upload_name(filename)
+    file_path = os.path.join(UPLOAD_DIR, safe_name)
+
+    deleted, detail = delete_document(file_path)
+    if not deleted:
+        raise HTTPException(status_code=404, detail=detail)
+
+    return {"message": detail, "filename": safe_name}
 
 
 # ── Streaming helpers ──────────────────────────────────────────────────────────
@@ -177,6 +195,7 @@ def _message_content_to_text(content: object) -> str:
 def _stream_agent(full_prompt: str):
     """Yield SSE strings from a LangGraph agent stream."""
     sent_answer = False
+    yield _sse({"type": "step", "text": "Thinking..."})
     try:
         for chunk in agent.stream(
             {"messages": [{"role": "user", "content": full_prompt}]},

@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 type Message = {
   role: "user" | "ai";
   content: string;
+  steps?: string[];
 };
 
 type Chat = {
@@ -16,6 +17,12 @@ type Chat = {
   title?: string;
   pinned?: boolean;
   inProject?: boolean;
+};
+
+type UploadedBanner = {
+  id: string;
+  storedFilename?: string;
+  message: string;
 };
 
 const DEFAULT_LAMP_TOPICS = [
@@ -615,8 +622,7 @@ export default function Home() {
   const [currentChatIndex, setCurrentChatIndex] = useState<number | null>(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadNote, setUploadNote] = useState<string | null>(null);
+  const [uploadedBanners, setUploadedBanners] = useState<UploadedBanner[]>([]);
   const [loadingChatId, setLoadingChatId] = useState<number | null>(null);
   const [steps, setSteps] = useState<string[]>([]);
   const [sidebarView, setSidebarView] = useState<SidebarView>("chat");
@@ -633,7 +639,6 @@ export default function Home() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("ai_chats");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (saved) setChats(JSON.parse(saved) as Chat[]);
     } catch { /* ignore corrupt data */ }
   }, []);
@@ -644,7 +649,6 @@ export default function Home() {
 
   useEffect(() => {
     if (chats.length > 0 && currentChatIndex === null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentChatIndex(0);
     }
   }, [chats, currentChatIndex]);
@@ -745,7 +749,7 @@ export default function Home() {
     setInput("");
     setLoading(true);
     setLoadingChatId(chat.id);
-    setSteps([]);
+    setSteps(["Thinking..."]);
 
     try {
       if (mode === "deep") {
@@ -812,10 +816,11 @@ export default function Home() {
           return;
         }
 
-        const deepData = (await deepRes.json()) as { answer?: string };
+        const deepData = (await deepRes.json()) as { answer?: string; steps?: string[] };
         chat.messages.push({
           role: "ai",
           content: deepData.answer?.trim() || "No answer received in deep mode.",
+          steps: deepData.steps && deepData.steps.length > 0 ? deepData.steps : ["Thinking...", "Done"],
         });
         setChats([...updatedChats]);
         return;
@@ -856,6 +861,7 @@ export default function Home() {
       const decoder = new TextDecoder();
       let buffer = "";
       let answerReceived = false;
+      const collectedSteps: string[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -876,9 +882,10 @@ export default function Home() {
             const event = JSON.parse(dataLine.slice(6)) as { type: string; text?: string };
             if (event.type === "step" && event.text) {
               const stepText = event.text;
+              collectedSteps.push(stepText);
               setSteps((prev) => [...prev, stepText]);
             } else if (event.type === "answer" && event.text) {
-              chat.messages.push({ role: "ai", content: event.text });
+              chat.messages.push({ role: "ai", content: event.text, steps: [...collectedSteps] });
               setChats([...updatedChats]);
               answerReceived = true;
             } else if (event.type === "error") {
@@ -925,9 +932,6 @@ export default function Home() {
     const formData = new FormData();
     formData.append("file", file);
 
-    setUploading(true);
-    setUploadNote(null);
-
     try {
       const res = await fetch("http://127.0.0.1:8000/upload", {
         method: "POST",
@@ -941,20 +945,51 @@ export default function Home() {
 
       const data = (await res.json()) as {
         filename?: string;
+        stored_filename?: string;
+        original_filename?: string;
         rag_indexing?: string;
         rag_message?: string;
       };
 
-      const note = data.rag_message
-        ? `${data.filename ?? file.name}: ${data.rag_message}`
-        : `${data.filename ?? file.name} uploaded.`;
-      setUploadNote(note);
-      window.alert("File uploaded!");
+      const storedFilename = data.stored_filename ?? data.filename ?? file.name;
+      const displayName = data.original_filename ?? file.name;
+      const note = `${displayName} uploaded.`;
+      setUploadedBanners((prev) => [
+        {
+          id: storedFilename,
+          storedFilename,
+          message: note,
+        },
+        ...prev.filter((banner) => banner.id !== storedFilename),
+      ]);
     } catch (error) {
-      setUploadNote(`Upload error: ${error instanceof Error ? error.message : "unknown error"}`);
+      setUploadedBanners((prev) => [
+        {
+          id: `upload-error-${Date.now()}`,
+          message: `Upload error: ${error instanceof Error ? error.message : "unknown error"}`,
+        },
+        ...prev,
+      ]);
     } finally {
-      setUploading(false);
       e.target.value = "";
+    }
+  };
+
+  const handleDeleteUploadedFile = async (bannerId: string, storedFilename?: string) => {
+    // Immediately remove the banner so the UI feels instant.
+    setUploadedBanners((prev) => prev.filter((banner) => banner.id !== bannerId));
+
+    if (!storedFilename) {
+      return;
+    }
+
+    // Best-effort backend delete — silently ignore failures.
+    try {
+      await fetch(`http://127.0.0.1:8000/upload/${encodeURIComponent(storedFilename)}`, {
+        method: "DELETE",
+      });
+    } catch {
+      // ignore network errors — banner is already gone
     }
   };
 
@@ -1155,7 +1190,21 @@ export default function Home() {
                       : "mr-auto border border-[#e4ddce] bg-white text-slate-800"
                   }`}
                 >
-                  {msg.role === "ai" ? <MarkdownBody content={msg.content} /> : msg.content}
+                  {msg.role === "ai" ? (
+                    <>
+                      {msg.steps && msg.steps.length > 0 && (
+                        <div className="mb-2 flex flex-col gap-1">
+                          {msg.steps.map((step, si) => (
+                            <div key={si} className="flex items-center gap-1.5 text-xs italic text-slate-400">
+                              <span className="inline-block h-1 w-1 flex-shrink-0 rounded-full bg-[#c4b89a]" />
+                              {step}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <MarkdownBody content={msg.content} />
+                    </>
+                  ) : msg.content}
                 </div>
               ))}
 
@@ -1171,22 +1220,41 @@ export default function Home() {
           }`}
         >
           <div className="mx-auto w-full max-w-5xl">
-            <div className="mb-2 flex items-center justify-between gap-3 px-1">
-              <input
-                type="file"
-                onChange={(e) => {
-                  void handleFileUpload(e);
-                }}
-                className="max-w-[70%] text-sm text-slate-600 file:mr-3 file:rounded-lg file:border file:border-[#d6ccb8] file:bg-[#faf6ee] file:px-3 file:py-1.5 file:text-sm file:text-slate-700 hover:file:bg-[#f0e8d5]"
-              />
-              <span className="text-xs text-slate-500">
-                {uploading ? "Uploading..." : "Upload PDF for RAG"}
-              </span>
+            <div className="mb-2 flex items-center gap-3 px-1">
+              <label className="cursor-pointer rounded-xl bg-[#7b5e2a] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#5a4020]">
+                Upload File
+                <input
+                  type="file"
+                  hidden
+                  onChange={(e) => {
+                    void handleFileUpload(e);
+                  }}
+                />
+              </label>
             </div>
 
-            {uploadNote && (
-              <div className="mb-2 rounded-lg border border-[#e4ddce] bg-[#fffdf8] px-3 py-2 text-xs text-slate-600">
-                {uploadNote}
+            {uploadedBanners.length > 0 && (
+              <div className="mb-2 space-y-2">
+                {uploadedBanners.map((banner) => (
+                  <div
+                    key={banner.id}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-[#e4ddce] bg-[#fffdf8] px-3 py-2 text-xs text-slate-600"
+                  >
+                    <span className="min-w-0 flex-1 truncate">{banner.message}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        banner.id.startsWith("upload-error-")
+                          ? setUploadedBanners((prev) => prev.filter((b) => b.id !== banner.id))
+                          : void handleDeleteUploadedFile(banner.id, banner.storedFilename)
+                      }
+                      className="flex h-5 w-5 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-[#f1eadc] hover:text-[#9a3d2b]"
+                      aria-label={`Delete ${banner.message}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
 

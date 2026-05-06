@@ -3,10 +3,17 @@ from pathlib import Path
 from langchain_core.tools import tool
 from langchain_tavily import TavilySearch
 
-from app.rag import create_vectorstore, load_vectorstore
+from app.rag import create_vectorstore, load_vectorstore, rebuild_vectorstore
 
 
 _retriever = None
+_latest_uploaded_filename: str | None = None
+
+
+def set_latest_uploaded_document(filename: str) -> None:
+    """Set the most recently uploaded stored filename for search preference."""
+    global _latest_uploaded_filename
+    _latest_uploaded_filename = filename
 
 
 def _get_retriever():
@@ -28,7 +35,7 @@ def _get_retriever():
 
 
 def run_document_search(query: str) -> str:
-    """Search indexed PDF documents and return relevant excerpts."""
+    """Search indexed documents and return relevant excerpts."""
     retriever = _get_retriever()
     if retriever is None:
         return (
@@ -36,7 +43,22 @@ def run_document_search(query: str) -> str:
             "Add text-based PDFs to data/ and run: python SETUP_RAG.py"
         )
 
-    docs = retriever.invoke(query)
+    docs = []
+    if _latest_uploaded_filename:
+        try:
+            vectorstore = load_vectorstore()
+            latest_source = str(Path("data") / _latest_uploaded_filename)
+            docs = vectorstore.similarity_search(
+                query,
+                k=6,
+                filter={"source": latest_source},
+            )
+        except Exception:
+            docs = []
+
+    if not docs:
+        docs = retriever.invoke(query)
+
     if not docs:
         return (
             "No relevant passages were found in the indexed PDFs. "
@@ -47,21 +69,44 @@ def run_document_search(query: str) -> str:
 
 
 def index_document(file_path: str) -> tuple[bool, str]:
-    """Index a newly uploaded PDF and refresh retriever cache."""
+    """Index a newly uploaded document and refresh retriever cache."""
     global _retriever
 
     path = Path(file_path)
     if not path.exists():
         return False, f"File not found: {file_path}"
 
-    if path.suffix.lower() != ".pdf":
-        return False, "Only PDF files are supported for RAG indexing."
+    try:
+        vectorstore = rebuild_vectorstore(str(path.parent))
+        _retriever = (
+            vectorstore.as_retriever(search_kwargs={"k": 4})
+            if vectorstore is not None
+            else None
+        )
+        return True, "Indexed for RAG"
+    except Exception as exc:  # noqa: BLE001
+        return False, str(exc)
+
+
+def delete_document(file_path: str) -> tuple[bool, str]:
+    """Delete an uploaded document and rebuild the retriever state."""
+    global _latest_uploaded_filename, _retriever
+
+    path = Path(file_path)
+    if not path.exists():
+        return False, f"File not found: {file_path}"
 
     try:
-        create_vectorstore(str(path))
-        vectorstore = load_vectorstore()
-        _retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
-        return True, "Indexed for RAG"
+        path.unlink()
+        if _latest_uploaded_filename == path.name:
+            _latest_uploaded_filename = None
+        vectorstore = rebuild_vectorstore(str(path.parent))
+        _retriever = (
+            vectorstore.as_retriever(search_kwargs={"k": 4})
+            if vectorstore is not None
+            else None
+        )
+        return True, "Document deleted"
     except Exception as exc:  # noqa: BLE001
         return False, str(exc)
 

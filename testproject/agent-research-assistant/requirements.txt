@@ -13,3 +13,5 @@ pypdf
 tiktoken
 fastapi
 uvicorn
+python-multipart
+python-docx
