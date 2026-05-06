@@ -46,6 +46,26 @@ def run_document_search(query: str) -> str:
     return "\n\n".join([doc.page_content for doc in docs])
 
 
+def index_document(file_path: str) -> tuple[bool, str]:
+    """Index a newly uploaded PDF and refresh retriever cache."""
+    global _retriever
+
+    path = Path(file_path)
+    if not path.exists():
+        return False, f"File not found: {file_path}"
+
+    if path.suffix.lower() != ".pdf":
+        return False, "Only PDF files are supported for RAG indexing."
+
+    try:
+        create_vectorstore(str(path))
+        vectorstore = load_vectorstore()
+        _retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
+        return True, "Indexed for RAG"
+    except Exception as exc:  # noqa: BLE001
+        return False, str(exc)
+
+
 @tool("document_search")
 def document_search(query: str) -> str:
     """Search through embedded PDF documents and return relevant excerpts."""

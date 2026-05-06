@@ -1,17 +1,35 @@
 import json
+import os
 import random
+import re
+import shutil
 import time
 
-from fastapi import FastAPI, Response
+from fastapi import BackgroundTasks, FastAPI, File, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from .agent import create_agent, thread_config
 from .prompts import DEEP_RESEARCH_PROMPT, SYSTEM_PROMPT
-from .tools import run_document_search
+from .tools import index_document, run_document_search
 
 app = FastAPI()
+
+UPLOAD_DIR = "data"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+def _safe_upload_name(filename: str) -> str:
+    # Prevent path traversal and normalize unsupported characters.
+    candidate = os.path.basename(filename or "").replace("\x00", "").strip()
+    if not candidate:
+        return "upload.bin"
+
+    cleaned = re.sub(r"[^A-Za-z0-9._-]", "_", candidate).lstrip(".")
+    if not cleaned:
+        return "upload.bin"
+    return cleaned[:255]
 
 # Enable CORS for frontend requests
 app.add_middleware(
@@ -84,6 +102,42 @@ def chat(query: Query):
         config=thread_config,
     )
     return {"answer": _extract_answer(response)}
+
+
+@app.post("/upload")
+async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    safe_name = _safe_upload_name(file.filename)
+    stem, suffix = os.path.splitext(safe_name)
+    if not stem:
+        stem = "upload"
+
+    file_path = os.path.join(UPLOAD_DIR, safe_name)
+    counter = 1
+    while os.path.exists(file_path):
+        file_path = os.path.join(UPLOAD_DIR, f"{stem}_{counter}{suffix}")
+        counter += 1
+
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    finally:
+        await file.close()
+
+    rag_indexed = False
+    rag_message = "RAG indexing skipped (only PDFs are indexed)."
+    rag_indexing = "skipped"
+    if os.path.splitext(file_path)[1].lower() == ".pdf":
+        background_tasks.add_task(index_document, file_path)
+        rag_message = "RAG indexing queued in background for this PDF."
+        rag_indexing = "queued"
+
+    return {
+        "message": "File uploaded successfully",
+        "filename": os.path.basename(file_path),
+        "rag_indexed": rag_indexed,
+        "rag_indexing": rag_indexing,
+        "rag_message": rag_message,
+    }
 
 
 # ── Streaming helpers ──────────────────────────────────────────────────────────

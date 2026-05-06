@@ -615,6 +615,8 @@ export default function Home() {
   const [currentChatIndex, setCurrentChatIndex] = useState<number | null>(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadNote, setUploadNote] = useState<string | null>(null);
   const [loadingChatId, setLoadingChatId] = useState<number | null>(null);
   const [steps, setSteps] = useState<string[]>([]);
   const [sidebarView, setSidebarView] = useState<SidebarView>("chat");
@@ -916,6 +918,46 @@ export default function Home() {
     void sendMessage(topic, "deep", true);
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setUploading(true);
+    setUploadNote(null);
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `Upload failed (${res.status})`);
+      }
+
+      const data = (await res.json()) as {
+        filename?: string;
+        rag_indexing?: string;
+        rag_message?: string;
+      };
+
+      const note = data.rag_message
+        ? `${data.filename ?? file.name}: ${data.rag_message}`
+        : `${data.filename ?? file.name} uploaded.`;
+      setUploadNote(note);
+      window.alert("File uploaded!");
+    } catch (error) {
+      setUploadNote(`Upload error: ${error instanceof Error ? error.message : "unknown error"}`);
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
   return (
     <div
       className="flex h-screen bg-[#f7f3eb] text-slate-800"
@@ -1129,6 +1171,25 @@ export default function Home() {
           }`}
         >
           <div className="mx-auto w-full max-w-5xl">
+            <div className="mb-2 flex items-center justify-between gap-3 px-1">
+              <input
+                type="file"
+                onChange={(e) => {
+                  void handleFileUpload(e);
+                }}
+                className="max-w-[70%] text-sm text-slate-600 file:mr-3 file:rounded-lg file:border file:border-[#d6ccb8] file:bg-[#faf6ee] file:px-3 file:py-1.5 file:text-sm file:text-slate-700 hover:file:bg-[#f0e8d5]"
+              />
+              <span className="text-xs text-slate-500">
+                {uploading ? "Uploading..." : "Upload PDF for RAG"}
+              </span>
+            </div>
+
+            {uploadNote && (
+              <div className="mb-2 rounded-lg border border-[#e4ddce] bg-[#fffdf8] px-3 py-2 text-xs text-slate-600">
+                {uploadNote}
+              </div>
+            )}
+
             <div className="flex items-end gap-3 rounded-2xl border border-[#d6ccb8] bg-white px-3 py-3 shadow-sm">
               <textarea
                 className="min-h-[64px] flex-1 resize-y rounded-xl px-3 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none"
