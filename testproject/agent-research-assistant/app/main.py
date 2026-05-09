@@ -2,16 +2,16 @@ import json
 import os
 import random
 import re
-import shutil
 import time
 
-from fastapi import BackgroundTasks, FastAPI, File, HTTPException, Response, UploadFile
+from fastapi import FastAPI, File, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from .agent import callback_handler, create_agent, thread_config
 from .prompts import DEEP_RESEARCH_PROMPT, SYSTEM_PROMPT
+from .rag import add_document_to_vectorstore
 from .tools import (
     delete_document,
     index_document,
@@ -111,39 +111,35 @@ def chat(query: Query):
 
 
 @app.post("/upload")
-async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
-    safe_name = _safe_upload_name(file.filename)
-    stem, suffix = os.path.splitext(safe_name)
-    if not stem:
-        stem = "upload"
-
-    file_path = os.path.join(UPLOAD_DIR, safe_name)
-    counter = 1
-    while os.path.exists(file_path):
-        file_path = os.path.join(UPLOAD_DIR, f"{stem}_{counter}{suffix}")
-        counter += 1
-
+async def upload_file(file: UploadFile = File(...)):
     try:
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    finally:
-        await file.close()
+        safe_name = _safe_upload_name(file.filename)
+        file_path = os.path.join(UPLOAD_DIR, safe_name)
+        
+        # Handle filename collisions
+        stem, suffix = os.path.splitext(safe_name)
+        counter = 1
+        while os.path.exists(file_path):
+            file_path = os.path.join(UPLOAD_DIR, f"{stem}_{counter}{suffix}")
+            counter += 1
 
-    rag_indexed = False
-    rag_message = "RAG indexing queued in background."
-    rag_indexing = "queued"
-    background_tasks.add_task(index_document, file_path)
-    set_latest_uploaded_document(os.path.basename(file_path))
-
-    return {
-        "message": "File uploaded successfully",
-        "filename": os.path.basename(file_path),
-        "stored_filename": os.path.basename(file_path),
-        "original_filename": file.filename,
-        "rag_indexed": rag_indexed,
-        "rag_indexing": rag_indexing,
-        "rag_message": rag_message,
-    }
+        # Write file to disk
+        with open(file_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+        
+        # Add document to vector store
+        add_document_to_vectorstore(file_path)
+        set_latest_uploaded_document(os.path.basename(file_path))
+        
+        return {
+            "message": "File uploaded and indexed successfully",
+            "filename": os.path.basename(file_path),
+            "stored_filename": os.path.basename(file_path),
+            "original_filename": file.filename,
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.delete("/upload/{filename}")

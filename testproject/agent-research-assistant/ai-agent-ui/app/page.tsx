@@ -19,12 +19,6 @@ type Chat = {
   inProject?: boolean;
 };
 
-type UploadedBanner = {
-  id: string;
-  storedFilename?: string;
-  message: string;
-};
-
 const DEFAULT_LAMP_TOPICS = [
   "Global inflation outlook in 2026",
   "AI regulation trends across major economies",
@@ -618,11 +612,24 @@ function StubView({ title, icon }: { title: string; icon: string }) {
 type SidebarView = "chat" | "artifacts" | "projects" | "lamp";
 
 export default function Home() {
-  const [chats, setChats] = useState<Chat[]>([{ id: 0, messages: [], mode: "normal" }]);
+  const [chats, setChats] = useState<Chat[]>(() => {
+    const fallback: Chat[] = [{ id: 0, messages: [], mode: "normal" }];
+    if (typeof window === "undefined") return fallback;
+
+    try {
+      const saved = localStorage.getItem("ai_chats");
+      if (!saved) return fallback;
+
+      const parsed = JSON.parse(saved) as Chat[];
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : fallback;
+    } catch {
+      return fallback;
+    }
+  });
   const [currentChatIndex, setCurrentChatIndex] = useState<number | null>(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [uploadedBanners, setUploadedBanners] = useState<UploadedBanner[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [loadingChatId, setLoadingChatId] = useState<number | null>(null);
   const [steps, setSteps] = useState<string[]>([]);
   const [sidebarView, setSidebarView] = useState<SidebarView>("chat");
@@ -635,23 +642,9 @@ export default function Home() {
     () => (currentChatIndex === null ? [] : (chats[currentChatIndex]?.messages ?? [])),
     [chats, currentChatIndex],
   );
-  // Load persisted chats after hydration (must run client-side only)
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("ai_chats");
-      if (saved) setChats(JSON.parse(saved) as Chat[]);
-    } catch { /* ignore corrupt data */ }
-  }, []);
-
   useEffect(() => {
     localStorage.setItem("ai_chats", JSON.stringify(chats));
   }, [chats]);
-
-  useEffect(() => {
-    if (chats.length > 0 && currentChatIndex === null) {
-      setCurrentChatIndex(0);
-    }
-  }, [chats, currentChatIndex]);
 
   const hasStarted = chats.some((chat) => chat.messages.length > 0);
 
@@ -925,71 +918,46 @@ export default function Home() {
     void sendMessage(topic, "deep", true);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const uploadFile = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
 
-    try {
-      const res = await fetch("http://127.0.0.1:8000/upload", {
-        method: "POST",
-        body: formData,
-      });
+    const res = await fetch("http://127.0.0.1:8000/upload", {
+      method: "POST",
+      body: formData,
+    });
 
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || `Upload failed (${res.status})`);
-      }
-
-      const data = (await res.json()) as {
-        filename?: string;
-        stored_filename?: string;
-        original_filename?: string;
-        rag_indexing?: string;
-        rag_message?: string;
-      };
-
-      const storedFilename = data.stored_filename ?? data.filename ?? file.name;
-      const displayName = data.original_filename ?? file.name;
-      const note = `${displayName} uploaded.`;
-      setUploadedBanners((prev) => [
-        {
-          id: storedFilename,
-          storedFilename,
-          message: note,
-        },
-        ...prev.filter((banner) => banner.id !== storedFilename),
-      ]);
-    } catch (error) {
-      setUploadedBanners((prev) => [
-        {
-          id: `upload-error-${Date.now()}`,
-          message: `Upload error: ${error instanceof Error ? error.message : "unknown error"}`,
-        },
-        ...prev,
-      ]);
-    } finally {
-      e.target.value = "";
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(errText || `Upload failed (${res.status})`);
     }
+
+    const data = (await res.json()) as {
+      filename?: string;
+      stored_filename?: string;
+      original_filename?: string;
+      rag_indexing?: string;
+      rag_message?: string;
+    };
+
+    const storedFilename = data.stored_filename ?? data.filename ?? file.name;
+    setUploadedFiles((prev) => [
+      storedFilename,
+      ...prev.filter((name) => name !== storedFilename),
+    ]);
+
+    return data;
   };
 
-  const handleDeleteUploadedFile = async (bannerId: string, storedFilename?: string) => {
-    // Immediately remove the banner so the UI feels instant.
-    setUploadedBanners((prev) => prev.filter((banner) => banner.id !== bannerId));
+  const handleDeleteUploadedFile = async (fileName: string) => {
+    setUploadedFiles((prev) => prev.filter((name) => name !== fileName));
 
-    if (!storedFilename) {
-      return;
-    }
-
-    // Best-effort backend delete — silently ignore failures.
     try {
-      await fetch(`http://127.0.0.1:8000/upload/${encodeURIComponent(storedFilename)}`, {
+      await fetch(`http://127.0.0.1:8000/upload/${encodeURIComponent(fileName)}`, {
         method: "DELETE",
       });
     } catch {
-      // ignore network errors — banner is already gone
+      // Keep UI responsive even if delete request fails.
     }
   };
 
@@ -1179,7 +1147,7 @@ export default function Home() {
 
         {/* Messages */}
         {hasStarted ? (
-          <div className="h-full w-full space-y-4 overflow-y-auto bg-[#f9f6ef] px-6 pt-44 pb-44">
+          <div className="absolute inset-x-0 top-44 bottom-44 w-full space-y-4 overflow-y-auto bg-[#f9f6ef] px-6 py-4">
             {selectedChat &&
               selectedChat.messages.map((msg: Message, i: number) => (
                 <div
@@ -1220,45 +1188,63 @@ export default function Home() {
           }`}
         >
           <div className="mx-auto w-full max-w-5xl">
-            <div className="mb-2 flex items-center gap-3 px-1">
-              <label className="cursor-pointer rounded-xl bg-[#7b5e2a] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#5a4020]">
+            <div className="mt-6">
+              <div className="mb-2 text-sm text-purple-300">📂 Knowledge Base</div>
+
+              <label className="mb-3 block cursor-pointer rounded-xl bg-[#7b5e2a] px-3 py-2 text-center text-white transition hover:bg-[#5a4020]">
                 Upload File
                 <input
                   type="file"
                   hidden
                   onChange={(e) => {
-                    void handleFileUpload(e);
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      void uploadFile(file);
+                    }
+                    e.target.value = "";
                   }}
                 />
               </label>
-            </div>
 
-            {uploadedBanners.length > 0 && (
-              <div className="mb-2 space-y-2">
-                {uploadedBanners.map((banner) => (
+              <div className="space-y-2">
+                {uploadedFiles.map((file, i) => (
                   <div
-                    key={banner.id}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-[#e4ddce] bg-[#fffdf8] px-3 py-2 text-xs text-slate-600"
+                    key={i}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 p-2 text-sm"
                   >
-                    <span className="min-w-0 flex-1 truncate">{banner.message}</span>
+                    <span className="min-w-0 truncate">📄 {file}</span>
                     <button
                       type="button"
-                      onClick={() =>
-                        banner.id.startsWith("upload-error-")
-                          ? setUploadedBanners((prev) => prev.filter((b) => b.id !== banner.id))
-                          : void handleDeleteUploadedFile(banner.id, banner.storedFilename)
-                      }
-                      className="flex h-5 w-5 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-[#f1eadc] hover:text-[#9a3d2b]"
-                      aria-label={`Delete ${banner.message}`}
+                      onClick={() => void handleDeleteUploadedFile(file)}
+                      className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-[#f1eadc] hover:text-[#9a3d2b]"
+                      aria-label={`Delete ${file}`}
                     >
                       ×
                     </button>
                   </div>
                 ))}
               </div>
-            )}
+            </div>
 
-            <div className="flex items-end gap-3 rounded-2xl border border-[#d6ccb8] bg-white px-3 py-3 shadow-sm">
+            <div className="relative flex items-end gap-3 rounded-2xl border border-[#d6ccb8] bg-white px-3 py-3 pt-10 shadow-sm">
+              {uploadedFiles.length > 0 && (
+                <div className="absolute top-2 left-3 flex max-w-[70%] flex-wrap gap-1">
+                  {uploadedFiles.slice(0, 3).map((file) => (
+                    <span
+                      key={`composer-${file}`}
+                      className="max-w-[180px] truncate rounded-md border border-[#e4ddce] bg-[#f8f3e8] px-2 py-0.5 text-[11px] text-slate-600"
+                      title={file}
+                    >
+                      📄 {file}
+                    </span>
+                  ))}
+                  {uploadedFiles.length > 3 && (
+                    <span className="rounded-md border border-[#e4ddce] bg-[#f8f3e8] px-2 py-0.5 text-[11px] text-slate-600">
+                      +{uploadedFiles.length - 3} more
+                    </span>
+                  )}
+                </div>
+              )}
               <textarea
                 className="min-h-[64px] flex-1 resize-y rounded-xl px-3 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none"
                 value={input}
